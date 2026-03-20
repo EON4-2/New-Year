@@ -170,25 +170,24 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 <script>
 (function(){
 // ================================================================
-//  MUSIC — visible mini player, auto-starts on Descend
+//  MUSIC — HTML5 Audio with local MP3 file. No YouTube. No blockers.
 // ================================================================
-var musicPlaying = false, musicFrame = null;
+var music = new Audio('music.mp3');
+music.loop = true;
+music.volume = 0.7;
+var musicPlaying = false;
 window.toggleMusic = function(){
   var btn = document.getElementById('musicBtn');
   if (!musicPlaying) {
-    // Create visible embedded player
-    musicFrame = document.createElement('div');
-    musicFrame.id = 'musicPlayer';
-    musicFrame.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:200;border-radius:12px;overflow:hidden;border:1px solid rgba(255,215,0,.25);box-shadow:0 0 20px rgba(255,120,0,.15)';
-    musicFrame.innerHTML = '<iframe width="250" height="50" src="https://www.youtube.com/embed/Jg6fbBFX9d8?autoplay=1&loop=1&playlist=Jg6fbBFX9d8&controls=1&modestbranding=1&playsinline=1&rel=0&showinfo=0" allow="autoplay;encrypted-media" frameborder="0" style="display:block;border-radius:12px"></iframe>'
-      + '<a href="https://www.youtube.com/watch?v=Jg6fbBFX9d8" target="_blank" rel="noopener" style="display:block;text-align:center;padding:5px;background:rgba(0,0,0,.8);color:rgba(255,215,0,.5);font-size:.6rem;font-family:Rajdhani,sans-serif;letter-spacing:.15em;text-decoration:none;border-radius:0 0 12px 12px">If blocked → Open YouTube ↗</a>';
-    document.body.appendChild(musicFrame);
-    btn.innerHTML = '&#9835; ON'; btn.style.borderColor = 'rgba(255,215,0,.5)'; btn.style.color = '#ffd700';
-    musicPlaying = true;
+    music.play().then(function(){
+      btn.innerHTML = '&#9835; ON'; btn.style.borderColor = 'rgba(255,215,0,.5)'; btn.style.color = '#ffd700';
+      musicPlaying = true;
+    }).catch(function(){
+      // Autoplay blocked — will work after next user click
+      btn.innerHTML = '&#9835; CLICK'; btn.style.color = '#ff6600';
+    });
   } else {
-    var mp = document.getElementById('musicPlayer');
-    if (mp) mp.parentNode.removeChild(mp);
-    musicFrame = null;
+    music.pause();
     btn.innerHTML = '&#9835; OFF'; btn.style.borderColor = 'rgba(0,212,255,.2)'; btn.style.color = 'rgba(0,212,255,.4)';
     musicPlaying = false;
   }
@@ -204,50 +203,35 @@ function drawDragonEye(id) {
   var cx = W/2, cy = H/2, irisR = Math.min(W,H)*0.42;
   var pupilW = irisR*0.11, pupilH = irisR*0.88;
 
-  // === EYELID FOLDS — drawn FIRST as dark curved shapes ===
-  // These create the 3D socket the eye sits in
+  // === EYELID SHADOWS — soft curved gradients, NO rectangular fills ===
+  // Upper lid shadow — follows a curve, fades naturally
+  for(var i=0;i<15;i++){
+    var alpha = (15-i)/15 * 0.06;
+    var yOff = i * (cy*0.06);
+    x.strokeStyle='rgba(3,1,0,'+alpha+')';
+    x.lineWidth = 20-i;
+    x.beginPath();
+    x.moveTo(cx-irisR*1.8, cy-irisR*0.55+yOff);
+    x.quadraticCurveTo(cx, cy-irisR*1.4+yOff, cx+irisR*1.8, cy-irisR*0.55+yOff);
+    x.stroke();
+  }
+  // Lower lid shadow
+  for(var i=0;i<12;i++){
+    var alpha = (12-i)/12 * 0.04;
+    var yOff = i * (cy*0.05);
+    x.strokeStyle='rgba(3,1,0,'+alpha+')';
+    x.lineWidth = 16-i;
+    x.beginPath();
+    x.moveTo(cx-irisR*1.7, cy+irisR*0.5-yOff);
+    x.quadraticCurveTo(cx, cy+irisR*1.2-yOff, cx+irisR*1.7, cy+irisR*0.5-yOff);
+    x.stroke();
+  }
 
-  // Upper eyelid fold — thick dark curved band
-  x.save();
+  // Fine crease line — just a thin dark line, no rectangle
+  x.strokeStyle='rgba(5,2,0,0.35)';x.lineWidth=1.5;
   x.beginPath();
-  x.moveTo(cx-irisR*1.6, cy-irisR*0.3);
-  x.quadraticCurveTo(cx, cy-irisR*1.35, cx+irisR*1.6, cy-irisR*0.3);
-  x.lineTo(cx+irisR*1.6, 0);
-  x.lineTo(cx-irisR*1.6, 0);
-  x.closePath();
-  var lidG = x.createLinearGradient(0,0,0,cy-irisR*0.2);
-  lidG.addColorStop(0,'rgba(8,4,2,0.9)');
-  lidG.addColorStop(0.6,'rgba(15,8,3,0.7)');
-  lidG.addColorStop(1,'rgba(20,12,5,0.15)');
-  x.fillStyle=lidG; x.fill();
-  x.restore();
-
-  // Lower eyelid fold
-  x.save();
-  x.beginPath();
-  x.moveTo(cx-irisR*1.5, cy+irisR*0.35);
-  x.quadraticCurveTo(cx, cy+irisR*1.2, cx+irisR*1.5, cy+irisR*0.35);
-  x.lineTo(cx+irisR*1.5, H);
-  x.lineTo(cx-irisR*1.5, H);
-  x.closePath();
-  var lidG2 = x.createLinearGradient(0,cy+irisR*0.3,0,H);
-  lidG2.addColorStop(0,'rgba(18,10,4,0.1)');
-  lidG2.addColorStop(0.4,'rgba(12,6,2,0.6)');
-  lidG2.addColorStop(1,'rgba(6,3,1,0.85)');
-  x.fillStyle=lidG2; x.fill();
-  x.restore();
-
-  // Eyelid crease line — thin dark line following upper lid curve
-  x.strokeStyle='rgba(5,2,0,0.5)';x.lineWidth=2.5;
-  x.beginPath();
-  x.moveTo(cx-irisR*1.4, cy-irisR*0.2);
-  x.quadraticCurveTo(cx, cy-irisR*1.15, cx+irisR*1.4, cy-irisR*0.2);
-  x.stroke();
-  // Softer shadow below crease
-  x.strokeStyle='rgba(30,15,5,0.2)';x.lineWidth=8;
-  x.beginPath();
-  x.moveTo(cx-irisR*1.3, cy-irisR*0.15);
-  x.quadraticCurveTo(cx, cy-irisR*1.05, cx+irisR*1.3, cy-irisR*0.15);
+  x.moveTo(cx-irisR*1.5, cy-irisR*0.35);
+  x.quadraticCurveTo(cx, cy-irisR*1.15, cx+irisR*1.5, cy-irisR*0.35);
   x.stroke();
 
   // === SCALY SKIN — 3D lit scales with highlight/shadow per scale ===
@@ -268,13 +252,13 @@ function drawDragonEye(id) {
       var b=~~(base*0.25);
       var sz=2+Math.random()*2.5;
       // Scale body
-      x.fillStyle='rgba('+r+','+g+','+b+','+(edgeFade*0.65)+')';
+      x.fillStyle='rgba('+r+','+g+','+b+','+(edgeFade*0.35)+')';
       x.beginPath();x.arc(sx,sy,sz,0,6.28);x.fill();
       // Scale highlight (top edge, facing light)
-      x.fillStyle='rgba('+(r+35)+','+(g+20)+','+(b+10)+','+(edgeFade*lightFactor*0.25)+')';
+      x.fillStyle='rgba('+(r+35)+','+(g+20)+','+(b+10)+','+(edgeFade*lightFactor*0.12)+')';
       x.beginPath();x.arc(sx-0.5,sy-1,sz*0.5,0,6.28);x.fill();
       // Scale shadow (bottom edge)
-      x.fillStyle='rgba(2,1,0,'+(edgeFade*(1-lightFactor)*0.2)+')';
+      x.fillStyle='rgba(2,1,0,'+(edgeFade*(1-lightFactor)*0.1)+')';
       x.beginPath();x.arc(sx+0.5,sy+1.2,sz*0.6,0,6.28);x.fill();
     }
   }
@@ -294,11 +278,11 @@ function drawDragonEye(id) {
   // === IRIS — MULTI-COLOR (green/blue/gold/brown like references) ===
   x.save(); x.beginPath(); x.arc(cx,cy,irisR,0,6.28); x.clip();
 
-  // Base: dark greenish-brown
+  // Base: amber center → green mid → dark outer
   var ig=x.createRadialGradient(cx,cy,pupilH*0.12,cx,cy,irisR);
-  ig.addColorStop(0,'#c8a030');ig.addColorStop(0.1,'#a08828');ig.addColorStop(0.2,'#887830');
-  ig.addColorStop(0.35,'#607038');ig.addColorStop(0.5,'#506840');ig.addColorStop(0.65,'#485830');
-  ig.addColorStop(0.8,'#3a4828');ig.addColorStop(0.92,'#2a3518');ig.addColorStop(1,'#1a2210');
+  ig.addColorStop(0,'#dda020');ig.addColorStop(0.08,'#cc9020');ig.addColorStop(0.18,'#aa7828');
+  ig.addColorStop(0.3,'#887830');ig.addColorStop(0.42,'#607838');ig.addColorStop(0.55,'#4a6838');
+  ig.addColorStop(0.68,'#3a5830');ig.addColorStop(0.82,'#2a4020');ig.addColorStop(0.93,'#182810');ig.addColorStop(1,'#0e1808');
   x.fillStyle=ig;x.fill();
 
   // Warm gold inner ring
@@ -431,23 +415,24 @@ function drawDragonEye(id) {
   x.quadraticCurveTo(cx,cy-irisR*0.85,cx+irisR*1.1,cy-irisR*0.15);
   x.stroke();
 
-  // Very soft gradient shadow from the upper eyelid onto the iris
-  var eyeShadow=x.createLinearGradient(0,cy-irisR*0.5,0,cy-irisR*0.05);
-  eyeShadow.addColorStop(0,'rgba(0,0,0,0.3)');eyeShadow.addColorStop(1,'transparent');
-  x.fillStyle=eyeShadow;
-  x.beginPath();
-  x.moveTo(cx-irisR*1.1,cy-irisR*0.5);
-  x.quadraticCurveTo(cx,cy-irisR*1.0,cx+irisR*1.1,cy-irisR*0.5);
-  x.lineTo(cx+irisR*1.1,cy);x.lineTo(cx-irisR*1.1,cy);
-  x.fill();
+  // Very soft shadow from upper eyelid onto iris (curved, no hard lines)
+  for(var i=0;i<8;i++){
+    x.strokeStyle='rgba(0,0,0,'+(0.04-i*0.004)+')';
+    x.lineWidth=12-i;
+    x.beginPath();
+    x.moveTo(cx-irisR*1.0, cy-irisR*0.25-i*3);
+    x.quadraticCurveTo(cx, cy-irisR*0.75-i*3, cx+irisR*1.0, cy-irisR*0.25-i*3);
+    x.stroke();
+  }
 
-  // Corner fades to transparent
-  var lf=x.createLinearGradient(0,0,W*0.15,0);
-  lf.addColorStop(0,'rgba(0,0,0,0.4)');lf.addColorStop(1,'transparent');
-  x.fillStyle=lf;x.fillRect(0,0,W*0.18,H);
-  var rf=x.createLinearGradient(W,0,W*0.85,0);
-  rf.addColorStop(0,'rgba(0,0,0,0.4)');rf.addColorStop(1,'transparent');
-  x.fillStyle=rf;x.fillRect(W*0.82,0,W*0.18,H);
+  // Soft elliptical vignette — no rectangles, just a natural oval fade
+  var vig = x.createRadialGradient(cx, cy, irisR*0.8, cx, cy, Math.max(W,H)*0.55);
+  vig.addColorStop(0, 'transparent');
+  vig.addColorStop(0.6, 'transparent');
+  vig.addColorStop(0.85, 'rgba(1,0,0,0.15)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.35)');
+  x.fillStyle = vig;
+  x.fillRect(0,0,W,H);
 }
 
 drawDragonEye('eyeL');
