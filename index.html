@@ -87,7 +87,7 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 #bsod h1{font-size:clamp(1.5rem,5vw,3.5rem)}#bsod p{font-size:clamp(.9rem,2vw,1.3rem);max-width:640px;margin:20px 0;line-height:1.8}
 
 /* Music toggle */
-#musicBtn{position:fixed;top:20px;right:20px;z-index:200;cursor:pointer;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.2em;color:rgba(0,212,255,.4);background:rgba(0,0,0,.4);border:1px solid rgba(0,212,255,.2);padding:8px 18px;border-radius:20px;backdrop-filter:blur(8px);transition:all .3s}
+/* Music auto-plays, no button needed */
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(0,212,255,.2),rgba(255,215,0,.2));border-radius:4px}
@@ -104,7 +104,7 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 <canvas id="eyeR" class="dragon-eye" width="900" height="600"></canvas>
 
 <!-- Music toggle -->
-<button id="musicBtn" onclick="toggleMusic()">&#9835; OFF</button>
+<!-- No music button - auto plays -->
 
 <!-- Hero -->
 <section class="hero">
@@ -170,28 +170,22 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 <script>
 (function(){
 // ================================================================
-//  MUSIC — HTML5 Audio with local MP3 file. No YouTube. No blockers.
+//  MUSIC — auto-play, no toggle, no button. Tries until it works.
 // ================================================================
 var music = new Audio('music.mp3');
 music.loop = true;
 music.volume = 0.7;
-var musicPlaying = false;
-window.toggleMusic = function(){
-  var btn = document.getElementById('musicBtn');
-  if (!musicPlaying) {
-    music.play().then(function(){
-      btn.innerHTML = '&#9835; ON'; btn.style.borderColor = 'rgba(255,215,0,.5)'; btn.style.color = '#ffd700';
-      musicPlaying = true;
-    }).catch(function(){
-      // Autoplay blocked — will work after next user click
-      btn.innerHTML = '&#9835; CLICK'; btn.style.color = '#ff6600';
-    });
-  } else {
-    music.pause();
-    btn.innerHTML = '&#9835; OFF'; btn.style.borderColor = 'rgba(0,212,255,.2)'; btn.style.color = 'rgba(0,212,255,.4)';
-    musicPlaying = false;
-  }
-};
+var musicStarted = false;
+function startMusic(){
+  if(musicStarted) return;
+  music.play().then(function(){ musicStarted=true; }).catch(function(){});
+}
+// Try immediately
+startMusic();
+// Retry on ANY user interaction (click, scroll, keypress, touch)
+['click','scroll','keypress','touchstart','mousedown'].forEach(function(evt){
+  document.addEventListener(evt, startMusic, {once:false, passive:true});
+});
 
 // ================================================================
 //  DRAGON EYES — rendered to 2D canvases, position:fixed
@@ -471,8 +465,8 @@ function animateEyes(){
     if(eyeOpen > blinkTarget) eyeOpen += (blinkTarget - eyeOpen) * 0.5;
     else eyeOpen += (blinkTarget - eyeOpen) * 0.18;
   } else {
-    // Slow dramatic close for BSOD
-    eyeOpen += (0 - eyeOpen) * 0.015;
+    // BSOD triggered — keep eyes open for dissolution, stop blinking
+    eyeOpen = 1;
   }
 
   var scaleY = Math.max(0.01, eyeOpen);
@@ -548,7 +542,7 @@ document.getElementById('descendBtn').addEventListener('click',function(){
   document.body.classList.add('unlocked');
   this.style.transition='opacity .8s';this.style.opacity='0';
   setTimeout(function(){document.getElementById('descendBtn').style.display='none';},800);
-  if(!musicPlaying) toggleMusic();
+  startMusic();
   setTimeout(function(){document.getElementById('conv').scrollIntoView({behavior:'smooth'});},400);
 });
 
@@ -576,15 +570,173 @@ function typeQ(i){if(i>qStr.length){qA.textContent='— Glitch / CR8F8';setTimeo
   qEl.innerHTML=h;var c=qStr[i]||'';setTimeout(function(){typeQ(i+1);},c==='\n'?250:c==='.'?350:c===','?180:50);}
 
 // ================================================================
-//  BSOD — eyes close first, then blue screen
+//  BSOD — eyes dissolve into star particles then blue screen
 // ================================================================
 var bsodDone = false;
+var dissolving = false;
+var eyeParticles = []; // shared particle array for both eyes
+var dissolveCanvas = null, dissolveCtx = null;
+
+function initDissolve(){
+  // Create full-screen overlay canvas for floating particles
+  dissolveCanvas = document.createElement('canvas');
+  dissolveCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:4;pointer-events:none';
+  dissolveCanvas.width = innerWidth;
+  dissolveCanvas.height = innerHeight;
+  document.body.appendChild(dissolveCanvas);
+  dissolveCtx = dissolveCanvas.getContext('2d');
+
+  // Sample pixels from each eye
+  sampleEye('eyeL');
+  sampleEye('eyeR');
+
+  dissolving = true;
+}
+
+function sampleEye(id){
+  var c = document.getElementById(id);
+  var ctx = c.getContext('2d');
+  var imgData = ctx.getImageData(0,0,c.width,c.height);
+  var d = imgData.data;
+
+  // Get screen position of this canvas
+  var rect = c.getBoundingClientRect();
+  var scaleX = rect.width / c.width;
+  var scaleY_ratio = rect.height / c.height;
+
+  // Collect all non-transparent pixels
+  var candidates = [];
+  for(var y=0; y<c.height; y+=2){
+    for(var x=0; x<c.width; x+=2){
+      var i = (y*c.width+x)*4;
+      if(d[i+3] > 30){ // has visible alpha
+        candidates.push({
+          cx: x, cy: y, // canvas coords
+          r: d[i], g: d[i+1], b: d[i+2], a: d[i+3],
+          // screen coords
+          sx: rect.left + x * scaleX,
+          sy: rect.top + y * scaleY_ratio
+        });
+      }
+    }
+  }
+
+  // Randomly sample 4000 from candidates
+  var count = Math.min(4000, candidates.length);
+  for(var i=candidates.length-1; i>0; i--){
+    var j=~~(Math.random()*(i+1));
+    var t=candidates[i];candidates[i]=candidates[j];candidates[j]=t;
+  }
+
+  for(var i=0; i<count; i++){
+    var p = candidates[i];
+    eyeParticles.push({
+      // Source
+      canvasId: id,
+      cx: p.cx, cy: p.cy,
+      // Current screen position
+      x: p.sx, y: p.sy,
+      // Original color
+      r: p.r, g: p.g, b: p.b, a: p.a/255,
+      // Star color (white/blue tint)
+      sr: 180+~~(Math.random()*75), sg: 200+~~(Math.random()*55), sb: 220+~~(Math.random()*35),
+      // Physics
+      vx: (Math.random()-0.5)*2,
+      vy: -(Math.random()*1.5+0.3),
+      // State: 0=still in eye, 1=released as star
+      state: 0,
+      // When to release (staggered over ~6 seconds at 60fps)
+      releaseFrame: ~~(Math.random()*360),
+      // Star size when floating
+      starSize: 1 + Math.random()*2.5,
+      // Life after release
+      life: 1.0,
+      // Twinkle phase
+      twinkle: Math.random()*6.28
+    });
+  }
+}
+
+var dissolveFrame = 0;
+function animateDissolve(){
+  if(!dissolving) return;
+  requestAnimationFrame(animateDissolve);
+  dissolveFrame++;
+
+  dissolveCtx.clearRect(0,0,dissolveCanvas.width,dissolveCanvas.height);
+
+  var eyeLctx = document.getElementById('eyeL').getContext('2d');
+  var eyeRctx = document.getElementById('eyeR').getContext('2d');
+  var allDone = true;
+
+  for(var i=0; i<eyeParticles.length; i++){
+    var p = eyeParticles[i];
+
+    if(p.state === 0){
+      // Still in eye — check if time to release
+      if(dissolveFrame >= p.releaseFrame){
+        p.state = 1;
+        // Erase this pixel from the eye canvas (make transparent)
+        var ectx = p.canvasId==='eyeL' ? eyeLctx : eyeRctx;
+        ectx.clearRect(p.cx-2, p.cy-2, 4, 4);
+      } else {
+        allDone = false;
+      }
+    }
+
+    if(p.state === 1){
+      // Floating as star
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy -= 0.008; // float upward acceleration
+      p.vx += (Math.random()-0.5)*0.1; // gentle drift
+      p.life -= 0.003;
+
+      if(p.life > 0){
+        allDone = false;
+        var tw = 0.6 + 0.4*Math.sin(dissolveFrame*0.05 + p.twinkle);
+        var alpha = p.life * tw;
+
+        // Draw as glowing star
+        dissolveCtx.fillStyle = 'rgba('+p.sr+','+p.sg+','+p.sb+','+alpha+')';
+        dissolveCtx.beginPath();
+        dissolveCtx.arc(p.x, p.y, p.starSize * p.life, 0, 6.28);
+        dissolveCtx.fill();
+
+        // Glow halo
+        if(p.starSize > 1.5){
+          dissolveCtx.fillStyle = 'rgba('+p.sr+','+p.sg+','+p.sb+','+(alpha*0.15)+')';
+          dissolveCtx.beginPath();
+          dissolveCtx.arc(p.x, p.y, p.starSize * 4 * p.life, 0, 6.28);
+          dissolveCtx.fill();
+        }
+      }
+    }
+  }
+
+  // Fade eye canvas opacity gradually
+  var eyeFade = Math.max(0, 1 - dissolveFrame/300);
+  document.getElementById('eyeL').style.opacity = eyeFade;
+  document.getElementById('eyeR').style.opacity = eyeFade;
+
+  // After 8 seconds, show BSOD
+  if(dissolveFrame > 480){
+    document.getElementById('bsod').classList.add('show');
+    dissolving = false;
+  }
+}
+
 window.addEventListener('scroll',function(){
   if(bsodDone) return;
   if(innerHeight + scrollY >= document.body.scrollHeight - 120){
     bsodDone = true;
+    // Stop blinking
     closingForBSOD = true;
-    setTimeout(function(){document.getElementById('bsod').classList.add('show');},4500);
+    // Start dissolution after a brief pause
+    setTimeout(function(){
+      initDissolve();
+      animateDissolve();
+    }, 500);
   }
 });
 
