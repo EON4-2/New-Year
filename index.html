@@ -9,7 +9,7 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{background:#010005;color:#e8e4f0;font-family:'Rajdhani',sans-serif;overflow:hidden}
+body{background:#010005;color:#e8e4f0;font-family:'Rajdhani',sans-serif;overflow:hidden;perspective:1000px}
 body.unlocked{overflow-x:hidden;overflow-y:auto}
 ::selection{background:rgba(0,212,255,.25);color:#ffd700}
 
@@ -24,8 +24,19 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 @keyframes nd2{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,50px) scale(1.08)}}
 
 /* Glyphs */
-.gly{position:fixed;pointer-events:none;z-index:4;opacity:0;text-shadow:0 0 10px currentColor,0 0 25px currentColor,0 0 50px currentColor;animation:gF linear infinite;font-weight:bold}
-@keyframes gF{0%{opacity:0;transform:translateY(0) rotate(0deg) scale(.8)}5%{opacity:.5}20%{opacity:.2}50%{opacity:.35}80%{opacity:.2}95%{opacity:.4}100%{opacity:0;transform:translateY(-120vh) rotate(40deg) scale(1.1)}}
+.gly{position:fixed;pointer-events:none;z-index:4;opacity:0;
+  text-shadow:0 0 10px currentColor,0 0 25px currentColor,0 0 50px currentColor,0 2px 4px rgba(0,0,0,.8);
+  animation:gF linear infinite;font-weight:bold;
+  -webkit-text-stroke:0.5px rgba(255,255,255,.1);
+  filter:drop-shadow(0 0 6px currentColor)}
+@keyframes gF{
+  0%{opacity:0;transform:translateY(0) translateZ(0) rotateX(0deg) rotateY(0deg) scale(.7)}
+  5%{opacity:.55}
+  20%{opacity:.25;transform:translateY(-24vh) rotateY(15deg) rotateX(5deg) scale(.85)}
+  50%{opacity:.4;transform:translateY(-60vh) rotateY(-10deg) rotateX(-5deg) scale(.95)}
+  80%{opacity:.25;transform:translateY(-96vh) rotateY(8deg) scale(1.05)}
+  95%{opacity:.45}
+  100%{opacity:0;transform:translateY(-120vh) rotateY(-15deg) rotateX(10deg) scale(1.1)}}
 
 /* Hero overlay content */
 .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:10}
@@ -167,10 +178,22 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 
 <div id="bsod"><h1>CR8F8 SYSTEM THRESHOLD OVERFLOW</h1><p>The calendar has glitched.<br>Species threshold reached.<br><br>REALITY MALFUNCTION<br>Reload the page to reboot the universe.</p><small>March 20, 2026 — The conversation that woke us up</small></div>
 
-<!-- Music - loaded immediately, will autoplay when possible -->
-<iframe id="musicFrame" style="position:fixed;bottom:0;right:0;opacity:0.001;width:2px;height:2px;pointer-events:none"
-  src="https://www.youtube.com/embed/Jg6fbBFX9d8?autoplay=1&loop=1&playlist=Jg6fbBFX9d8&controls=0&modestbranding=1&playsinline=1&rel=0&mute=0"
-  allow="autoplay; encrypted-media" frameborder="0"></iframe>
+<!-- Music — YouTube IFrame API for reliable playback -->
+<div id="ytPlayer" style="position:fixed;bottom:-200px;left:-200px;width:1px;height:1px;opacity:0.001;pointer-events:none;z-index:0"></div>
+<script>
+// Load YouTube IFrame API
+var tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';
+document.head.appendChild(tag);
+var ytReady=false,ytPlayer=null;
+window.onYouTubeIframeAPIReady=function(){ytReady=true;};
+function startMusic(){
+  if(ytPlayer)return;
+  if(!ytReady){setTimeout(startMusic,500);return;}
+  ytPlayer=new YT.Player('ytPlayer',{height:'1',width:'1',videoId:'Jg6fbBFX9d8',
+    playerVars:{autoplay:1,loop:1,playlist:'Jg6fbBFX9d8',controls:0,modestbranding:1,playsinline:1,rel:0},
+    events:{onReady:function(e){e.target.playVideo();}}});
+}
+</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -340,6 +363,27 @@ glowSpriteR.position.set(1.55, -0.8, 0.3);
 glowSpriteR.scale.set(3, 2, 1);
 scene.add(glowSpriteR);
 
+// --- MAGIC DUST / EMBER PARTICLES around eyes ---
+var dustTex = (function(){
+  var c=document.createElement('canvas');c.width=32;c.height=32;
+  var x=c.getContext('2d');
+  var g=x.createRadialGradient(16,16,0,16,16,16);
+  g.addColorStop(0,'rgba(255,200,100,1)');g.addColorStop(0.3,'rgba(255,140,50,0.6)');g.addColorStop(1,'transparent');
+  x.fillStyle=g;x.fillRect(0,0,32,32);return new THREE.CanvasTexture(c);
+})();
+var dustParticles = [];
+for(var i=0;i<60;i++){
+  var dMat=new THREE.SpriteMaterial({map:dustTex,blending:THREE.AdditiveBlending,transparent:true,opacity:0.4+Math.random()*0.4});
+  var d=new THREE.Sprite(dMat);
+  var sz=0.03+Math.random()*0.08;
+  d.scale.set(sz,sz,1);
+  d.position.set((Math.random()-0.5)*6, (Math.random()-0.5)*3-0.3, Math.random()*2-0.5);
+  d.userData={ox:d.position.x,oy:d.position.y,oz:d.position.z,
+    sx:Math.random()*0.3+0.1,sy:Math.random()*0.2+0.1,sz:Math.random()*0.15+0.05,
+    ph:Math.random()*6.28};
+  scene.add(d);dustParticles.push(d);
+}
+
 // --- Stars (MORE, brighter) ---
 var starCount = 2500;
 var starGeo = new THREE.BufferGeometry();
@@ -358,22 +402,44 @@ var starMat = new THREE.PointsMaterial({
 var starField = new THREE.Points(starGeo, starMat);
 scene.add(starField);
 
-// --- SHOOTING STARS (3D lines) ---
+// --- SHOOTING STARS (glowing sprite trails) ---
 var shootingStars = [];
-function createShootingStar() {
-  var geo = new THREE.BufferGeometry();
-  var pts = [];
-  var sx = (Math.random()-0.5)*40, sy = (Math.random()*0.5+0.3)*20, sz = -Math.random()*50-10;
-  for(var i=0;i<20;i++){pts.push(sx+i*0.8, sy-i*0.3, sz);}
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
-  var mat = new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending});
-  var line = new THREE.Line(geo,mat);
-  line.userData = {life:1.0,speed:0.015+Math.random()*0.02};
-  scene.add(line);
-  shootingStars.push(line);
+// Create a soft glow texture for shooting star particles
+var ssCanvas = document.createElement('canvas');
+ssCanvas.width=64;ssCanvas.height=64;
+var ssCtx=ssCanvas.getContext('2d');
+var ssg=ssCtx.createRadialGradient(32,32,0,32,32,32);
+ssg.addColorStop(0,'rgba(255,255,255,1)');ssg.addColorStop(0.15,'rgba(200,220,255,0.8)');
+ssg.addColorStop(0.4,'rgba(100,150,255,0.3)');ssg.addColorStop(1,'transparent');
+ssCtx.fillStyle=ssg;ssCtx.fillRect(0,0,64,64);
+var ssTex=new THREE.CanvasTexture(ssCanvas);
+
+function createShootingStar(){
+  var group=new THREE.Group();
+  var startX=(Math.random()-0.5)*60;
+  var startY=Math.random()*30+10;
+  var startZ=-Math.random()*80-20;
+  var vx=2+Math.random()*3;
+  var vy=-(0.8+Math.random()*1.5);
+  // Head - bright large sprite
+  var headMat=new THREE.SpriteMaterial({map:ssTex,blending:THREE.AdditiveBlending,transparent:true,opacity:1,color:0xeeffff});
+  var head=new THREE.Sprite(headMat);
+  head.scale.set(1.5,1.5,1);
+  group.add(head);
+  // Trail - 12 smaller fading sprites
+  var trail=[];
+  for(var i=1;i<=12;i++){
+    var tMat=new THREE.SpriteMaterial({map:ssTex,blending:THREE.AdditiveBlending,transparent:true,opacity:(1-i/12)*0.6,color:0xaaccff});
+    var t=new THREE.Sprite(tMat);
+    t.scale.set(1.2-i*0.08,1.2-i*0.08,1);
+    t.position.set(-i*vx*0.12, -i*vy*0.12, 0);
+    group.add(t);trail.push(t);
+  }
+  group.position.set(startX,startY,startZ);
+  group.userData={life:1.0,speed:0.008+Math.random()*0.012,vx:vx,vy:vy,trail:trail};
+  scene.add(group);shootingStars.push(group);
 }
-// Spawn shooting stars periodically
-setInterval(function(){if(shootingStars.length<8)createShootingStar();}, 800);
+setInterval(function(){if(shootingStars.length<6)createShootingStar();},1200);
 
 // --- Animate ---
 var clock = new THREE.Clock();
@@ -409,13 +475,25 @@ function animate3D() {
   starField.rotation.y += 0.0003;
   starField.rotation.x += 0.0001;
 
-  // Shooting stars lifecycle
+  // Magic dust float
+  for(var i=0;i<dustParticles.length;i++){
+    var d=dustParticles[i],u=d.userData;
+    d.position.x = u.ox + Math.sin(t*u.sx+u.ph)*0.8;
+    d.position.y = u.oy + Math.cos(t*u.sy+u.ph)*0.5 + Math.sin(t*0.3)*0.1;
+    d.position.z = u.oz + Math.sin(t*u.sz+u.ph*2)*0.3;
+    d.material.opacity = 0.3 + Math.sin(t*2+u.ph)*0.3;
+  }
+
+  // Shooting stars — move group, fade trail
   for(var i=shootingStars.length-1;i>=0;i--){
     var ss=shootingStars[i];
-    ss.position.x += 0.3;
-    ss.position.y -= 0.12;
+    ss.position.x += ss.userData.vx*0.3;
+    ss.position.y += ss.userData.vy*0.3;
     ss.userData.life -= ss.userData.speed;
-    ss.material.opacity = ss.userData.life;
+    // Fade all children
+    for(var c=0;c<ss.children.length;c++){
+      ss.children[c].material.opacity = Math.max(0, ss.userData.life * (c===0?1:((ss.children.length-c)/ss.children.length)*0.6));
+    }
     if(ss.userData.life<=0){scene.remove(ss);shootingStars.splice(i,1);}
   }
 
@@ -439,9 +517,8 @@ document.getElementById('descendBtn').addEventListener('click', function(){
   this.style.opacity='0';
   setTimeout(function(){document.getElementById('descendBtn').style.display='none';},800);
 
-  // Reload music iframe on user gesture to enable autoplay
-  var mf = document.getElementById('musicFrame');
-  mf.src = mf.src; // Re-trigger load after user interaction
+  // Start music via YouTube API (user gesture enables autoplay)
+  startMusic();
 
   // Smooth scroll to conversation
   setTimeout(function(){
@@ -504,7 +581,7 @@ new IntersectionObserver(function(e){for(var j=0;j<e.length;j++){
 function typeQ(i){if(i>qStr.length){qA.textContent='— Glitch / CR8F8';setTimeout(function(){qA.style.opacity='1';},100);return;}
   var h=qStr.substring(0,i).replace(/\n/g,'<br>');
   h=h.replace('CHOOSE','<span style="text-shadow:0 0 30px rgba(255,215,0,1),0 0 60px rgba(255,215,0,.6),0 0 120px rgba(255,215,0,.3);letter-spacing:.25em;font-weight:900">CHOOSE</span>');
-  qEl.innerHTML=h;var c=qStr[i]||'';setTimeout(function(){typeQ(i+1);},c==='\n'?150:c==='.'?220:c===','?120:35);}
+  qEl.innerHTML=h;var c=qStr[i]||'';setTimeout(function(){typeQ(i+1);},c==='\n'?300:c==='.'?400:c===','?200:55);}
 
 // ============================================================
 //  BSOD
@@ -513,7 +590,7 @@ var bsodDone=false;
 addEventListener('scroll',function(){
   if(bsodDone)return;
   if(innerHeight+scrollY>=document.body.scrollHeight-120){bsodDone=true;
-    setTimeout(function(){document.getElementById('bsod').classList.add('show');},2400);}
+    setTimeout(function(){document.getElementById('bsod').classList.add('show');},5400);}
 });
 
 // ============================================================
