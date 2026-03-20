@@ -18,7 +18,7 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 
 /* Eye canvases — CENTERED, always visible, behind content text */
 .dragon-eye{position:fixed;top:50%;z-index:3;pointer-events:none;
-  filter:drop-shadow(0 0 80px rgba(255,130,10,.5)) drop-shadow(0 0 160px rgba(255,80,0,.25)) drop-shadow(0 0 250px rgba(200,50,0,.12))}
+  filter:drop-shadow(0 0 50px rgba(200,150,40,.4)) drop-shadow(0 0 100px rgba(180,100,20,.2)) drop-shadow(0 0 180px rgba(150,80,10,.1))}
 #eyeL{left:5%;transform:translateY(-50%)}
 #eyeR{right:5%;transform:translateY(-50%)}
 
@@ -179,9 +179,9 @@ window.toggleMusic = function(){
     // Create visible embedded player
     musicFrame = document.createElement('div');
     musicFrame.id = 'musicPlayer';
-    musicFrame.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:200;border-radius:16px;overflow:hidden;border:1px solid rgba(255,215,0,.3);box-shadow:0 0 30px rgba(255,120,0,.2)';
-    musicFrame.innerHTML = '<iframe width="320" height="80" src="https://www.youtube-nocookie.com/embed/Jg6fbBFX9d8?autoplay=1&loop=1&playlist=Jg6fbBFX9d8&controls=1&modestbranding=1&playsinline=1&rel=0" allow="autoplay;encrypted-media" frameborder="0" style="display:block;border-radius:16px"></iframe>'
-      + '<a href="https://www.youtube.com/watch?v=Jg6fbBFX9d8" target="_blank" style="display:block;text-align:center;padding:6px;background:rgba(0,0,0,.8);color:rgba(255,215,0,.6);font-size:.65rem;font-family:Rajdhani,sans-serif;letter-spacing:.15em;text-decoration:none">If blocked: Open in YouTube ↗</a>';
+    musicFrame.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:200;border-radius:12px;overflow:hidden;border:1px solid rgba(255,215,0,.25);box-shadow:0 0 20px rgba(255,120,0,.15)';
+    musicFrame.innerHTML = '<iframe width="250" height="50" src="https://www.youtube.com/embed/Jg6fbBFX9d8?autoplay=1&loop=1&playlist=Jg6fbBFX9d8&controls=1&modestbranding=1&playsinline=1&rel=0&showinfo=0" allow="autoplay;encrypted-media" frameborder="0" style="display:block;border-radius:12px"></iframe>'
+      + '<a href="https://www.youtube.com/watch?v=Jg6fbBFX9d8" target="_blank" rel="noopener" style="display:block;text-align:center;padding:5px;background:rgba(0,0,0,.8);color:rgba(255,215,0,.5);font-size:.6rem;font-family:Rajdhani,sans-serif;letter-spacing:.15em;text-decoration:none;border-radius:0 0 12px 12px">If blocked → Open YouTube ↗</a>';
     document.body.appendChild(musicFrame);
     btn.innerHTML = '&#9835; ON'; btn.style.borderColor = 'rgba(255,215,0,.5)'; btn.style.color = '#ffd700';
     musicPlaying = true;
@@ -201,216 +201,253 @@ function drawDragonEye(id) {
   var c = document.getElementById(id);
   var W = c.width, H = c.height;
   var x = c.getContext('2d');
-  var cx = W/2, cy = H/2, irisR = Math.min(W,H)*0.46;
-  var pupilW = irisR*0.12, pupilH = irisR*0.94;
+  var cx = W/2, cy = H/2, irisR = Math.min(W,H)*0.42;
+  var pupilW = irisR*0.11, pupilH = irisR*0.88;
 
-  // === TRANSPARENT CANVAS — no background ===
+  // === EYELID FOLDS — drawn FIRST as dark curved shapes ===
+  // These create the 3D socket the eye sits in
 
-  // === SCALY SKIN around iris — fades to transparent ===
-  for(var sy=0;sy<H;sy+=4){
-    for(var sx=0;sx<W;sx+=4){
+  // Upper eyelid fold — thick dark curved band
+  x.save();
+  x.beginPath();
+  x.moveTo(cx-irisR*1.6, cy-irisR*0.3);
+  x.quadraticCurveTo(cx, cy-irisR*1.35, cx+irisR*1.6, cy-irisR*0.3);
+  x.lineTo(cx+irisR*1.6, 0);
+  x.lineTo(cx-irisR*1.6, 0);
+  x.closePath();
+  var lidG = x.createLinearGradient(0,0,0,cy-irisR*0.2);
+  lidG.addColorStop(0,'rgba(8,4,2,0.9)');
+  lidG.addColorStop(0.6,'rgba(15,8,3,0.7)');
+  lidG.addColorStop(1,'rgba(20,12,5,0.15)');
+  x.fillStyle=lidG; x.fill();
+  x.restore();
+
+  // Lower eyelid fold
+  x.save();
+  x.beginPath();
+  x.moveTo(cx-irisR*1.5, cy+irisR*0.35);
+  x.quadraticCurveTo(cx, cy+irisR*1.2, cx+irisR*1.5, cy+irisR*0.35);
+  x.lineTo(cx+irisR*1.5, H);
+  x.lineTo(cx-irisR*1.5, H);
+  x.closePath();
+  var lidG2 = x.createLinearGradient(0,cy+irisR*0.3,0,H);
+  lidG2.addColorStop(0,'rgba(18,10,4,0.1)');
+  lidG2.addColorStop(0.4,'rgba(12,6,2,0.6)');
+  lidG2.addColorStop(1,'rgba(6,3,1,0.85)');
+  x.fillStyle=lidG2; x.fill();
+  x.restore();
+
+  // Eyelid crease line — thin dark line following upper lid curve
+  x.strokeStyle='rgba(5,2,0,0.5)';x.lineWidth=2.5;
+  x.beginPath();
+  x.moveTo(cx-irisR*1.4, cy-irisR*0.2);
+  x.quadraticCurveTo(cx, cy-irisR*1.15, cx+irisR*1.4, cy-irisR*0.2);
+  x.stroke();
+  // Softer shadow below crease
+  x.strokeStyle='rgba(30,15,5,0.2)';x.lineWidth=8;
+  x.beginPath();
+  x.moveTo(cx-irisR*1.3, cy-irisR*0.15);
+  x.quadraticCurveTo(cx, cy-irisR*1.05, cx+irisR*1.3, cy-irisR*0.15);
+  x.stroke();
+
+  // === SCALY SKIN — 3D lit scales with highlight/shadow per scale ===
+  var lightAngle = -0.8; // light from upper-left
+  for(var sy=0;sy<H;sy+=5){
+    for(var sx=0;sx<W;sx+=5){
       var d=Math.hypot(sx-cx,sy-cy);
-      if(d<irisR*1.05) continue;
-      var edgeFade=Math.max(0, 1-(d/(Math.min(W,H)*0.48)-0.5)*3);
-      if(edgeFade<=0) continue;
-      var n=Math.random(),base=8+n*20;
-      // Brownish-dark scales with slight color variation
-      var r=~~(base*1.3+Math.sin(sx*0.05)*5), g=~~(base*0.55+Math.cos(sy*0.07)*3), b=~~(base*0.25);
-      x.fillStyle='rgba('+r+','+g+','+b+','+(edgeFade*0.7)+')';
-      var scaleSize=2+Math.random()*2.5;
-      x.beginPath();x.arc(sx+Math.random()*2,sy+Math.random()*2,scaleSize,0,6.28);x.fill();
-      // Highlight on top edge of each scale
-      if(Math.random()>0.7){
-        x.fillStyle='rgba('+(r+30)+','+(g+15)+','+(b+8)+','+(edgeFade*0.25)+')';
-        x.beginPath();x.arc(sx+Math.random()*2,sy-1+Math.random(),scaleSize*0.6,0,6.28);x.fill();
-      }
+      if(d<irisR*1.02) continue;
+      var edgeFade=Math.max(0,1-(d/(Math.min(W,H)*0.46)-0.45)*3);
+      if(edgeFade<=0.01) continue;
+      var n=Math.random();
+      var base=10+n*16;
+      var ang=Math.atan2(sy-cy,sx-cx);
+      // Light direction affects each scale
+      var lightFactor=0.5+0.5*Math.cos(ang-lightAngle);
+      var r=~~(base*(1+lightFactor*0.5));
+      var g=~~(base*0.5*(1+lightFactor*0.3));
+      var b=~~(base*0.25);
+      var sz=2+Math.random()*2.5;
+      // Scale body
+      x.fillStyle='rgba('+r+','+g+','+b+','+(edgeFade*0.65)+')';
+      x.beginPath();x.arc(sx,sy,sz,0,6.28);x.fill();
+      // Scale highlight (top edge, facing light)
+      x.fillStyle='rgba('+(r+35)+','+(g+20)+','+(b+10)+','+(edgeFade*lightFactor*0.25)+')';
+      x.beginPath();x.arc(sx-0.5,sy-1,sz*0.5,0,6.28);x.fill();
+      // Scale shadow (bottom edge)
+      x.fillStyle='rgba(2,1,0,'+(edgeFade*(1-lightFactor)*0.2)+')';
+      x.beginPath();x.arc(sx+0.5,sy+1.2,sz*0.6,0,6.28);x.fill();
     }
   }
 
   // Warm light bleed from iris
-  var ambG=x.createRadialGradient(cx,cy,irisR*0.7,cx,cy,irisR*2);
-  ambG.addColorStop(0,'rgba(220,100,15,0.3)');ambG.addColorStop(0.3,'rgba(160,60,5,0.15)');ambG.addColorStop(0.7,'rgba(80,30,0,0.05)');ambG.addColorStop(1,'transparent');
+  var ambG=x.createRadialGradient(cx,cy,irisR*0.6,cx,cy,irisR*2);
+  ambG.addColorStop(0,'rgba(200,100,20,0.3)');ambG.addColorStop(0.4,'rgba(120,50,5,0.12)');ambG.addColorStop(1,'transparent');
   x.fillStyle=ambG;x.beginPath();x.arc(cx,cy,irisR*2,0,6.28);x.fill();
 
-  // === LIMBAL RING — thick dark border ===
-  for(var r=0;r<16;r++){
-    x.strokeStyle='rgba(12,5,0,'+(0.6-r*0.035)+')';
-    x.lineWidth=5-r*0.28;
-    x.beginPath();x.arc(cx,cy,irisR+3-r*0.4,0,6.28);x.stroke();
+  // === LIMBAL RING — deep dark border ===
+  for(var r=0;r<18;r++){
+    x.strokeStyle='rgba(8,3,0,'+(0.7-r*0.035)+')';
+    x.lineWidth=5.5-r*0.28;
+    x.beginPath();x.arc(cx,cy,irisR+3-r*0.35,0,6.28);x.stroke();
   }
 
-  // === IRIS — clipped circle ===
+  // === IRIS — MULTI-COLOR (green/blue/gold/brown like references) ===
   x.save(); x.beginPath(); x.arc(cx,cy,irisR,0,6.28); x.clip();
 
-  // Layer 1: Deep base with many color stops
-  var ig=x.createRadialGradient(cx,cy,pupilH*0.15,cx,cy,irisR);
-  ig.addColorStop(0,'#ffaa10');ig.addColorStop(0.08,'#ff9500');ig.addColorStop(0.18,'#ee8200');
-  ig.addColorStop(0.3,'#dd6e00');ig.addColorStop(0.42,'#cc5800');ig.addColorStop(0.55,'#aa4800');
-  ig.addColorStop(0.68,'#885000');ig.addColorStop(0.8,'#664000');ig.addColorStop(0.9,'#443000');ig.addColorStop(1,'#221800');
+  // Base: dark greenish-brown
+  var ig=x.createRadialGradient(cx,cy,pupilH*0.12,cx,cy,irisR);
+  ig.addColorStop(0,'#c8a030');ig.addColorStop(0.1,'#a08828');ig.addColorStop(0.2,'#887830');
+  ig.addColorStop(0.35,'#607038');ig.addColorStop(0.5,'#506840');ig.addColorStop(0.65,'#485830');
+  ig.addColorStop(0.8,'#3a4828');ig.addColorStop(0.92,'#2a3518');ig.addColorStop(1,'#1a2210');
   x.fillStyle=ig;x.fill();
 
-  // Layer 2: Warm central glow
-  var wg=x.createRadialGradient(cx,cy,irisR*0.15,cx,cy,irisR*0.6);
-  wg.addColorStop(0,'rgba(255,220,80,0.2)');wg.addColorStop(0.5,'rgba(255,150,30,0.1)');wg.addColorStop(1,'transparent');
+  // Warm gold inner ring
+  var wg=x.createRadialGradient(cx,cy,pupilH*0.15,cx,cy,irisR*0.45);
+  wg.addColorStop(0,'rgba(255,200,60,0.35)');wg.addColorStop(0.5,'rgba(200,150,30,0.15)');wg.addColorStop(1,'transparent');
   x.fillStyle=wg;x.fill();
 
-  // Layer 3: 700 deep subtle fibers (base texture)
-  for(var f=0;f<700;f++){
-    var fa=(f/700)*6.28+Math.random()*0.012;
-    var inR=pupilH*0.4+Math.random()*pupilH*0.35;
-    var ouR=inR+Math.random()*(irisR-inR)*0.92;
-    var hue=12+~~(Math.random()*32), sat=65+~~(Math.random()*30), lum=15+~~(Math.random()*28);
-    x.strokeStyle='hsla('+hue+','+sat+'%,'+lum+'%,'+(0.04+Math.random()*0.12)+')';
-    x.lineWidth=0.2+Math.random()*0.7;
-    x.beginPath();x.moveTo(cx+Math.cos(fa)*inR,cy+Math.sin(fa)*inR);
-    x.lineTo(cx+Math.cos(fa+Math.random()*0.008-0.004)*ouR,cy+Math.sin(fa+Math.random()*0.008-0.004)*ouR);x.stroke();
+  // Blue/teal sectors (like in the reference photos)
+  for(var i=0;i<5;i++){
+    var sa=i*6.28/5+Math.random()*0.5;
+    var sg=x.createRadialGradient(cx+Math.cos(sa)*irisR*0.3,cy+Math.sin(sa)*irisR*0.3,0,
+      cx+Math.cos(sa)*irisR*0.3,cy+Math.sin(sa)*irisR*0.3,irisR*0.5);
+    sg.addColorStop(0,'rgba(40,120,130,'+(0.08+Math.random()*0.1)+')');sg.addColorStop(1,'transparent');
+    x.fillStyle=sg;x.fill();
   }
 
-  // Layer 4: 400 medium fibers (visible striation)
-  for(var f=0;f<400;f++){
-    var fa=(f/400)*6.28+Math.random()*0.018;
-    var inR=pupilH*0.45+Math.random()*pupilH*0.2;
-    var ouR=inR+Math.random()*(irisR*0.95-inR);
-    var hue=16+~~(Math.random()*24), lum=30+~~(Math.random()*40);
-    x.strokeStyle='hsla('+hue+',82%,'+lum+'%,'+(0.08+Math.random()*0.22)+')';
-    x.lineWidth=0.4+Math.random()*1.6;
+  // 800 THICK irregular fibers (the key to realism)
+  for(var f=0;f<800;f++){
+    var fa=(f/800)*6.28+Math.random()*0.015;
+    var inR=pupilH*0.35+Math.random()*pupilH*0.4;
+    var ouR=inR+Math.random()*(irisR-inR)*0.92;
+    // Color varies: gold near pupil, green/brown mid, dark outer
+    var distPct=(inR-pupilH*0.3)/(irisR-pupilH*0.3);
+    var hue, sat, lum;
+    if(distPct<0.3){hue=38+Math.random()*15;sat=70+Math.random()*25;lum=35+Math.random()*30;}
+    else if(distPct<0.6){hue=60+Math.random()*40;sat=40+Math.random()*30;lum=25+Math.random()*25;}
+    else{hue=30+Math.random()*50;sat=30+Math.random()*30;lum=15+Math.random()*20;}
+    x.strokeStyle='hsla('+~~hue+','+~~sat+'%,'+~~lum+'%,'+(0.04+Math.random()*0.18)+')';
+    x.lineWidth=0.3+Math.random()*2.2;
     x.beginPath();x.moveTo(cx+Math.cos(fa)*inR,cy+Math.sin(fa)*inR);
-    var mid=(inR+ouR)/2,dr=(Math.random()-0.5)*5;
-    x.quadraticCurveTo(cx+Math.cos(fa+0.008)*mid+dr,cy+Math.sin(fa+0.008)*mid+dr,cx+Math.cos(fa-0.003)*ouR,cy+Math.sin(fa-0.003)*ouR);
+    var mid=(inR+ouR)/2,drift=(Math.random()-0.5)*7;
+    x.quadraticCurveTo(cx+Math.cos(fa+0.006)*mid+drift,cy+Math.sin(fa+0.006)*mid+drift,
+      cx+Math.cos(fa-0.003)*ouR,cy+Math.sin(fa-0.003)*ouR);
     x.stroke();
   }
 
-  // Layer 5: 200 bright gold highlight fibers
+  // 200 bright gold/amber highlight fibers near pupil
   for(var f=0;f<200;f++){
-    var fa=(f/200)*6.28+Math.random()*0.025;
-    var inR=pupilH*0.5+Math.random()*pupilH*0.3;
-    var ouR=inR+Math.random()*(irisR*0.82-inR);
-    x.strokeStyle='hsla('+(20+~~(Math.random()*16))+',100%,'+(48+~~(Math.random()*35))+'%,'+(0.05+Math.random()*0.15)+')';
-    x.lineWidth=0.3+Math.random()*1.1;
+    var fa=(f/200)*6.28+Math.random()*0.03;
+    var inR=pupilH*0.4+Math.random()*pupilH*0.25;
+    var ouR=inR+Math.random()*(irisR*0.55-inR);
+    x.strokeStyle='hsla('+(35+~~(Math.random()*15))+',90%,'+(45+~~(Math.random()*30))+'%,'+(0.05+Math.random()*0.15)+')';
+    x.lineWidth=0.4+Math.random()*1.4;
     x.beginPath();x.moveTo(cx+Math.cos(fa)*inR,cy+Math.sin(fa)*inR);
     x.lineTo(cx+Math.cos(fa)*ouR,cy+Math.sin(fa)*ouR);x.stroke();
   }
 
-  // Layer 6: Branching veins (organic forked lines)
-  for(var v=0;v<35;v++){
-    var va=(v/35)*6.28+Math.random()*0.2;
-    var vR=pupilH*0.6;
-    x.strokeStyle='rgba(80,30,5,'+(0.08+Math.random()*0.12)+')';
-    x.lineWidth=0.8+Math.random()*1.2;
+  // Branching crypts (dark forked lines)
+  for(var v=0;v<40;v++){
+    var va=Math.random()*6.28,vR=pupilH*0.55;
+    x.strokeStyle='rgba(10,8,3,'+(0.08+Math.random()*0.15)+')';
+    x.lineWidth=0.8+Math.random()*1.5;
     x.beginPath();x.moveTo(cx+Math.cos(va)*vR,cy+Math.sin(va)*vR);
-    var segments=3+~~(Math.random()*3);
-    for(var s=1;s<=segments;s++){
-      var pct=s/segments;
-      var curR=vR+pct*(irisR*0.9-vR);
-      var drift=(Math.random()-0.5)*8;
-      x.lineTo(cx+Math.cos(va+drift*0.01)*curR+drift,cy+Math.sin(va+drift*0.01)*curR+(Math.random()-0.5)*4);
+    for(var s=1;s<=3;s++){
+      var pct=s/3,curR=vR+pct*(irisR*0.88-vR);
+      x.lineTo(cx+Math.cos(va+(Math.random()-0.5)*0.15)*curR+(Math.random()-0.5)*6,
+        cy+Math.sin(va+(Math.random()-0.5)*0.15)*curR+(Math.random()-0.5)*4);
     }
     x.stroke();
-    // Fork at the end
-    if(Math.random()>0.4){
-      var forkA=va+(Math.random()-0.5)*0.3;
-      x.beginPath();
-      x.moveTo(cx+Math.cos(va)*irisR*0.75,cy+Math.sin(va)*irisR*0.75);
-      x.lineTo(cx+Math.cos(forkA)*irisR*0.88,cy+Math.sin(forkA)*irisR*0.88);
-      x.stroke();
-    }
   }
 
-  // Layer 7: Collarette ring
-  x.strokeStyle='rgba(200,130,40,0.18)';x.lineWidth=3;
-  x.beginPath();x.arc(cx,cy,irisR*0.5,0,6.28);x.stroke();
-  x.strokeStyle='rgba(255,180,60,0.1)';x.lineWidth=1.5;
-  x.beginPath();x.arc(cx,cy,irisR*0.52,0,6.28);x.stroke();
+  // Collarette
+  x.strokeStyle='rgba(180,140,50,0.15)';x.lineWidth=3;
+  x.beginPath();x.arc(cx,cy,irisR*0.48,0,6.28);x.stroke();
 
-  // Layer 8: 100 hot flecks with radial glow
-  for(var i=0;i<100;i++){
-    var a=Math.random()*6.28,r=pupilH*0.5+Math.random()*(irisR*0.85-pupilH*0.5),sz=0.6+Math.random()*3;
-    var g=x.createRadialGradient(cx+Math.cos(a)*r,cy+Math.sin(a)*r,0,cx+Math.cos(a)*r,cy+Math.sin(a)*r,sz*2.5);
-    g.addColorStop(0,'rgba(255,'+(170+~~(Math.random()*75))+',15,'+(0.25+Math.random()*0.45)+')');g.addColorStop(1,'transparent');
-    x.fillStyle=g;x.beginPath();x.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,sz*2.5,0,6.28);x.fill();
+  // 80 hot flecks
+  for(var i=0;i<80;i++){
+    var a=Math.random()*6.28,r=pupilH*0.4+Math.random()*(irisR*0.8-pupilH*0.4),sz=0.5+Math.random()*2.5;
+    var fg=x.createRadialGradient(cx+Math.cos(a)*r,cy+Math.sin(a)*r,0,cx+Math.cos(a)*r,cy+Math.sin(a)*r,sz*2);
+    fg.addColorStop(0,'rgba(255,'+(170+~~(Math.random()*60))+',20,'+(0.2+Math.random()*0.35)+')');fg.addColorStop(1,'transparent');
+    x.fillStyle=fg;x.beginPath();x.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,sz*2,0,6.28);x.fill();
   }
 
-  // Layer 9: 50 dark crypts
-  for(var i=0;i<50;i++){
-    var a=Math.random()*6.28,r=irisR*0.5+Math.random()*irisR*0.38;
-    x.fillStyle='rgba(15,6,0,'+(0.08+Math.random()*0.18)+')';
-    x.beginPath();x.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,0.8+Math.random()*3,0,6.28);x.fill();
-  }
-
-  // Layer 10: Inner fire glow around pupil
-  var fg=x.createRadialGradient(cx,cy,pupilH*0.12,cx,cy,pupilH*1.4);
-  fg.addColorStop(0,'rgba(255,210,90,0.55)');fg.addColorStop(0.2,'rgba(255,160,30,0.3)');
-  fg.addColorStop(0.5,'rgba(255,100,0,0.12)');fg.addColorStop(1,'transparent');
-  x.fillStyle=fg;x.beginPath();x.arc(cx,cy,pupilH*1.4,0,6.28);x.fill();
-
-  // Layer 11: Subtle color variation sectors
-  for(var i=0;i<8;i++){
-    var sa=i*6.28/8+Math.random()*0.3;
-    var hue=Math.random()>0.5?15:35;
-    x.fillStyle='hsla('+hue+',80%,40%,'+(0.02+Math.random()*0.04)+')';
-    x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,irisR*0.9,sa,sa+6.28/8);x.fill();
-  }
+  // Inner fire glow
+  var ifg=x.createRadialGradient(cx,cy,pupilH*0.1,cx,cy,pupilH*1.3);
+  ifg.addColorStop(0,'rgba(255,200,70,0.45)');ifg.addColorStop(0.25,'rgba(255,150,30,0.2)');ifg.addColorStop(0.6,'rgba(200,100,0,0.08)');ifg.addColorStop(1,'transparent');
+  x.fillStyle=ifg;x.beginPath();x.arc(cx,cy,pupilH*1.3,0,6.28);x.fill();
 
   x.restore(); // unclip iris
 
-  // === VERTICAL SLIT PUPIL ===
-  x.fillStyle='#000';x.beginPath();x.moveTo(cx,cy-pupilH);
-  x.bezierCurveTo(cx+pupilW*1.2,cy-pupilH*0.33,cx+pupilW*1.2,cy+pupilH*0.33,cx,cy+pupilH);
-  x.bezierCurveTo(cx-pupilW*1.2,cy+pupilH*0.33,cx-pupilW*1.2,cy-pupilH*0.33,cx,cy-pupilH);x.fill();
+  // === PUPIL — irregular jagged slit ===
+  x.fillStyle='#000';
+  x.beginPath();x.moveTo(cx,cy-pupilH);
+  // Right side with slight irregularity
+  x.bezierCurveTo(cx+pupilW*1.15,cy-pupilH*0.35, cx+pupilW*1.3,cy-pupilH*0.1, cx+pupilW*1.1,cy);
+  x.bezierCurveTo(cx+pupilW*1.25,cy+pupilH*0.12, cx+pupilW*1.1,cy+pupilH*0.35, cx,cy+pupilH);
+  // Left side
+  x.bezierCurveTo(cx-pupilW*1.1,cy+pupilH*0.35, cx-pupilW*1.25,cy+pupilH*0.12, cx-pupilW*1.1,cy);
+  x.bezierCurveTo(cx-pupilW*1.3,cy-pupilH*0.1, cx-pupilW*1.15,cy-pupilH*0.35, cx,cy-pupilH);
+  x.fill();
 
-  // Pupil inner depth
-  var pg=x.createRadialGradient(cx,cy-pupilH*0.1,0,cx,cy,pupilW*3);
-  pg.addColorStop(0,'rgba(15,8,2,0.2)');pg.addColorStop(1,'rgba(0,0,0,0.6)');
-  x.fillStyle=pg;x.beginPath();x.moveTo(cx,cy-pupilH);
-  x.bezierCurveTo(cx+pupilW*1.2,cy-pupilH*0.33,cx+pupilW*1.2,cy+pupilH*0.33,cx,cy+pupilH);
-  x.bezierCurveTo(cx-pupilW*1.2,cy+pupilH*0.33,cx-pupilW*1.2,cy-pupilH*0.33,cx,cy-pupilH);x.fill();
+  // Slit edge glow
+  x.strokeStyle='rgba(200,150,30,0.35)';x.lineWidth=2;
+  x.beginPath();x.moveTo(cx,cy-pupilH);
+  x.bezierCurveTo(cx+pupilW*1.3,cy-pupilH*0.35,cx+pupilW*1.4,cy+pupilH*0.35,cx,cy+pupilH);x.stroke();
+  x.beginPath();x.moveTo(cx,cy-pupilH);
+  x.bezierCurveTo(cx-pupilW*1.3,cy-pupilH*0.35,cx-pupilW*1.4,cy+pupilH*0.35,cx,cy+pupilH);x.stroke();
+  // Wide soft glow
+  x.strokeStyle='rgba(180,100,10,0.1)';x.lineWidth=7;
+  x.beginPath();x.moveTo(cx,cy-pupilH*0.85);
+  x.bezierCurveTo(cx+pupilW*2,cy-pupilH*0.25,cx+pupilW*2,cy+pupilH*0.25,cx,cy+pupilH*0.85);x.stroke();
+  x.beginPath();x.moveTo(cx,cy-pupilH*0.85);
+  x.bezierCurveTo(cx-pupilW*2,cy-pupilH*0.25,cx-pupilW*2,cy+pupilH*0.25,cx,cy+pupilH*0.85);x.stroke();
 
-  // Slit edge glow (both sides independently)
-  x.strokeStyle='rgba(255,150,25,0.4)';x.lineWidth=2.5;
-  x.beginPath();x.moveTo(cx,cy-pupilH);x.bezierCurveTo(cx+pupilW*1.4,cy-pupilH*0.32,cx+pupilW*1.4,cy+pupilH*0.32,cx,cy+pupilH);x.stroke();
-  x.beginPath();x.moveTo(cx,cy-pupilH);x.bezierCurveTo(cx-pupilW*1.4,cy-pupilH*0.32,cx-pupilW*1.4,cy+pupilH*0.32,cx,cy+pupilH);x.stroke();
-  // Softer wide glow
-  x.strokeStyle='rgba(255,100,0,0.12)';x.lineWidth=6;
-  x.beginPath();x.moveTo(cx,cy-pupilH*0.9);x.bezierCurveTo(cx+pupilW*2,cy-pupilH*0.28,cx+pupilW*2,cy+pupilH*0.28,cx,cy+pupilH*0.9);x.stroke();
-  x.beginPath();x.moveTo(cx,cy-pupilH*0.9);x.bezierCurveTo(cx-pupilW*2,cy-pupilH*0.28,cx-pupilW*2,cy+pupilH*0.28,cx,cy+pupilH*0.9);x.stroke();
+  // === CATCHLIGHT — realistic window reflection shape ===
+  // Main: slightly rectangular with soft edges (like a window)
+  var clx=cx-irisR*0.18,cly=cy-irisR*0.22;
+  var clW=irisR*0.16,clH=irisR*0.12;
+  var cg=x.createRadialGradient(clx,cly,0,clx,cly,clW);
+  cg.addColorStop(0,'rgba(255,255,255,0.92)');cg.addColorStop(0.2,'rgba(255,255,255,0.7)');
+  cg.addColorStop(0.5,'rgba(255,245,220,0.3)');cg.addColorStop(1,'transparent');
+  x.fillStyle=cg;
+  // Slightly rounded rectangle for window shape
+  x.beginPath();
+  x.moveTo(clx-clW*0.6,cly-clH*0.8);
+  x.quadraticCurveTo(clx,cly-clH,clx+clW*0.5,cly-clH*0.7);
+  x.quadraticCurveTo(clx+clW*0.8,cly,clx+clW*0.4,cly+clH*0.6);
+  x.quadraticCurveTo(clx,cly+clH*0.8,clx-clW*0.5,cly+clH*0.5);
+  x.quadraticCurveTo(clx-clW*0.8,cly,clx-clW*0.6,cly-clH*0.8);
+  x.fill();
+  // Tiny secondary catchlight
+  x.fillStyle='rgba(255,255,255,0.4)';
+  x.beginPath();x.arc(cx+irisR*0.14,cy+irisR*0.16,irisR*0.04,0,6.28);x.fill();
 
-  // === CATCHLIGHTS ===
-  // Primary — top-left, large
-  var clx=cx-irisR*0.22,cly=cy-irisR*0.26;
-  var cg=x.createRadialGradient(clx,cly,0,clx,cly,irisR*0.15);
-  cg.addColorStop(0,'rgba(255,255,255,0.92)');cg.addColorStop(0.15,'rgba(255,255,255,0.7)');
-  cg.addColorStop(0.4,'rgba(255,240,210,0.25)');cg.addColorStop(1,'transparent');
-  x.fillStyle=cg;x.beginPath();x.arc(clx,cly,irisR*0.15,0,6.28);x.fill();
+  // === THIN SHADOW LINE at top/bottom of iris (eyelid edge shadow) ===
+  // This creates the illusion the eyelid is casting a shadow ON the eye
+  x.strokeStyle='rgba(0,0,0,0.25)';x.lineWidth=3;
+  x.beginPath();
+  x.moveTo(cx-irisR*1.1,cy-irisR*0.15);
+  x.quadraticCurveTo(cx,cy-irisR*0.85,cx+irisR*1.1,cy-irisR*0.15);
+  x.stroke();
 
-  // Secondary — bottom-right, smaller
-  var c2x=cx+irisR*0.16,c2y=cy+irisR*0.2;
-  var c2g=x.createRadialGradient(c2x,c2y,0,c2x,c2y,irisR*0.07);
-  c2g.addColorStop(0,'rgba(255,255,255,0.55)');c2g.addColorStop(1,'transparent');
-  x.fillStyle=c2g;x.beginPath();x.arc(c2x,c2y,irisR*0.07,0,6.28);x.fill();
+  // Very soft gradient shadow from the upper eyelid onto the iris
+  var eyeShadow=x.createLinearGradient(0,cy-irisR*0.5,0,cy-irisR*0.05);
+  eyeShadow.addColorStop(0,'rgba(0,0,0,0.3)');eyeShadow.addColorStop(1,'transparent');
+  x.fillStyle=eyeShadow;
+  x.beginPath();
+  x.moveTo(cx-irisR*1.1,cy-irisR*0.5);
+  x.quadraticCurveTo(cx,cy-irisR*1.0,cx+irisR*1.1,cy-irisR*0.5);
+  x.lineTo(cx+irisR*1.1,cy);x.lineTo(cx-irisR*1.1,cy);
+  x.fill();
 
-  // Micro sparkles
-  for(var sp=0;sp<8;sp++){
-    var spx=cx+(Math.random()-0.5)*irisR*0.9,spy=cy+(Math.random()-0.5)*irisR*0.7;
-    x.fillStyle='rgba(255,255,255,'+(0.1+Math.random()*0.2)+')';
-    x.beginPath();x.arc(spx,spy,0.4+Math.random()*1.2,0,6.28);x.fill();
-  }
-
-  // === EYELID SHADOWS — alpha fades to 0, no black boxes ===
-  var ts=x.createLinearGradient(0,0,0,cy*0.65);
-  ts.addColorStop(0,'rgba(3,1,0,0.75)');ts.addColorStop(0.5,'rgba(5,2,0,0.3)');ts.addColorStop(1,'transparent');
-  x.fillStyle=ts;x.fillRect(0,0,W,cy*0.65);
-
-  var bs=x.createLinearGradient(0,cy+cy*0.35,0,H);
-  bs.addColorStop(0,'transparent');bs.addColorStop(0.5,'rgba(5,2,0,0.25)');bs.addColorStop(1,'rgba(3,1,0,0.65)');
-  x.fillStyle=bs;x.fillRect(0,cy+cy*0.3,W,H);
-
-  // Side fades
-  var ls=x.createLinearGradient(0,0,W*0.18,0);
-  ls.addColorStop(0,'rgba(2,1,0,0.5)');ls.addColorStop(1,'transparent');
-  x.fillStyle=ls;x.fillRect(0,0,W*0.22,H);
-  var rs=x.createLinearGradient(W,0,W*0.82,0);
-  rs.addColorStop(0,'rgba(2,1,0,0.5)');rs.addColorStop(1,'transparent');
-  x.fillStyle=rs;x.fillRect(W*0.78,0,W*0.22,H);
+  // Corner fades to transparent
+  var lf=x.createLinearGradient(0,0,W*0.15,0);
+  lf.addColorStop(0,'rgba(0,0,0,0.4)');lf.addColorStop(1,'transparent');
+  x.fillStyle=lf;x.fillRect(0,0,W*0.18,H);
+  var rf=x.createLinearGradient(W,0,W*0.85,0);
+  rf.addColorStop(0,'rgba(0,0,0,0.4)');rf.addColorStop(1,'transparent');
+  x.fillStyle=rf;x.fillRect(W*0.82,0,W*0.18,H);
 }
 
 drawDragonEye('eyeL');
