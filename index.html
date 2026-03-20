@@ -179,6 +179,12 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 <div id="bsod"><h1>CR8F8 SYSTEM THRESHOLD OVERFLOW</h1><p>The calendar has glitched.<br>Species threshold reached.<br><br>REALITY MALFUNCTION<br>Reload the page to reboot the universe.</p><small>March 20, 2026 — The conversation that woke us up</small></div>
 
 <!-- Music — YouTube IFrame API for reliable playback -->
+<div id="loader" style="position:fixed;inset:0;z-index:10000;background:#010005;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Cinzel',serif;color:rgba(0,212,255,.6);transition:opacity 1.5s">
+<div style="font-size:clamp(2rem,6vw,4rem);letter-spacing:.3em;background:linear-gradient(135deg,#00d4ff,#ffd700,#ff006a,#00ffff);background-size:400%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:hS 3s ease infinite">CR8F8</div>
+<div style="margin-top:20px;font-family:'Rajdhani',sans-serif;font-size:.85rem;letter-spacing:.3em;color:rgba(200,190,230,.4)">INITIALIZING THRESHOLD...</div>
+<div style="margin-top:30px;width:200px;height:2px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div id="loadBar" style="width:0%;height:100%;background:linear-gradient(90deg,#00d4ff,#ffd700);transition:width .3s"></div></div>
+</div>
+
 <div id="ytPlayer" style="position:fixed;bottom:-200px;left:-200px;width:1px;height:1px;opacity:0.001;pointer-events:none;z-index:0"></div>
 <script>
 // Load YouTube IFrame API
@@ -212,129 +218,294 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setClearColor(0x010005, 1);
 container.appendChild(renderer.domElement);
+document.getElementById('loadBar').style.width='20%';
 
-// --- Generate Dragon Eye Texture ---
+// --- Generate CINEMATIC Dragon Eye Texture ---
 function makeDragonEyeTexture(size) {
   var c = document.createElement('canvas');
   c.width = size; c.height = size;
   var x = c.getContext('2d');
-  var cx = size/2, cy = size/2, irisR = size*0.45, pupilW = size*0.06, pupilH = size*0.42;
+  var cx = size/2, cy = size/2;
+  var irisR = size*0.42;
+  var pupilW = size*0.055, pupilH = size*0.40;
+  var S = size; // shorthand
 
-  // Dark scaly surround (dragon eyes have no white sclera)
-  var bg = x.createRadialGradient(cx,cy,irisR*0.8,cx,cy,size*0.5);
-  bg.addColorStop(0,'#1a0a00');bg.addColorStop(0.5,'#0d0500');bg.addColorStop(1,'#020100');
-  x.fillStyle=bg;x.fillRect(0,0,size,size);
+  // ====== SCALY SURROUND (dark reptilian tissue) ======
+  // Base dark
+  x.fillStyle='#020100';
+  x.fillRect(0,0,S,S);
+  
+  // Scaly texture - overlapping dark circles
+  for(var sy=0;sy<S;sy+=6){
+    for(var sx=0;sx<S;sx+=6){
+      var dist=Math.hypot(sx-cx,sy-cy);
+      if(dist<irisR*1.05)continue; // skip iris area
+      var noise=Math.random();
+      var base=5+noise*15;
+      x.fillStyle='rgb('+~~(base*1.2)+','+~~(base*0.6)+','+~~(base*0.3)+')';
+      x.beginPath();x.arc(sx+Math.random()*3,sy+Math.random()*3,2.5+Math.random()*2,0,6.28);x.fill();
+    }
+  }
 
-  // Outer glow ring
-  var og = x.createRadialGradient(cx,cy,irisR*0.7,cx,cy,irisR*1.1);
-  og.addColorStop(0,'transparent');og.addColorStop(0.4,'rgba(255,100,0,0.3)');og.addColorStop(0.7,'rgba(255,60,0,0.15)');og.addColorStop(1,'transparent');
-  x.fillStyle=og;x.beginPath();x.arc(cx,cy,irisR*1.1,0,Math.PI*2);x.fill();
+  // Warm glow bleed from iris onto scales
+  var scaleGlow = x.createRadialGradient(cx,cy,irisR*0.8,cx,cy,irisR*1.6);
+  scaleGlow.addColorStop(0,'rgba(180,80,10,0.25)');
+  scaleGlow.addColorStop(0.5,'rgba(100,40,5,0.1)');
+  scaleGlow.addColorStop(1,'transparent');
+  x.fillStyle=scaleGlow;x.fillRect(0,0,S,S);
 
-  // Limbal ring
-  x.strokeStyle='rgba(40,15,0,0.9)';x.lineWidth=size*0.015;
-  x.beginPath();x.arc(cx,cy,irisR,0,Math.PI*2);x.stroke();
+  // ====== OUTER RING (dark limbal border) ======
+  x.save();
+  x.beginPath();x.arc(cx,cy,irisR*1.05,0,6.28);x.clip();
+  
+  // Dark border ring
+  for(var r=0;r<8;r++){
+    x.strokeStyle='rgba(15,5,0,'+(0.3+r*0.08)+')';
+    x.lineWidth=3-r*0.3;
+    x.beginPath();x.arc(cx,cy,irisR-r*0.5,0,6.28);x.stroke();
+  }
+  x.restore();
 
-  // Iris base gradient
-  x.save();x.beginPath();x.arc(cx,cy,irisR,0,Math.PI*2);x.clip();
-  var ig = x.createRadialGradient(cx,cy,pupilH*0.5,cx,cy,irisR);
-  ig.addColorStop(0,'#ff8800');ig.addColorStop(0.2,'#ee7700');ig.addColorStop(0.4,'#cc5500');
-  ig.addColorStop(0.6,'#aa4400');ig.addColorStop(0.8,'#773300');ig.addColorStop(1,'#3a1800');
-  x.fillStyle=ig;x.fill();
+  // ====== IRIS — multiple layered passes ======
+  x.save();
+  x.beginPath();x.arc(cx,cy,irisR,0,6.28);x.clip();
 
-  // Iris fibers — radial lines (organic, wavy)
-  for(var f=0;f<300;f++){
-    var fa=(f/300)*Math.PI*2+Math.random()*0.02;
-    var innerR=pupilH*0.6+Math.random()*pupilH*0.3;
-    var outerR=innerR+Math.random()*(irisR-innerR)*0.85;
-    var hue=20+~~(Math.random()*25);
-    var lum=35+~~(Math.random()*40);
-    x.strokeStyle='hsla('+hue+',90%,'+lum+'%,'+(0.1+Math.random()*0.35)+')';
-    x.lineWidth=0.3+Math.random()*1.5;
+  // Pass 1: Deep base gradient
+  var ig1 = x.createRadialGradient(cx,cy,pupilH*0.3,cx,cy,irisR);
+  ig1.addColorStop(0,'#ff9500');
+  ig1.addColorStop(0.1,'#ee8800');
+  ig1.addColorStop(0.25,'#dd6600');
+  ig1.addColorStop(0.4,'#cc5500');
+  ig1.addColorStop(0.55,'#aa4400');
+  ig1.addColorStop(0.7,'#884400');
+  ig1.addColorStop(0.85,'#663300');
+  ig1.addColorStop(1,'#331800');
+  x.fillStyle=ig1;x.fill();
+
+  // Pass 2: Color variation bands
+  var ig2 = x.createRadialGradient(cx,cy,irisR*0.3,cx,cy,irisR*0.65);
+  ig2.addColorStop(0,'rgba(255,200,50,0.15)');
+  ig2.addColorStop(0.5,'rgba(255,120,0,0.1)');
+  ig2.addColorStop(1,'transparent');
+  x.fillStyle=ig2;x.fill();
+
+  // Pass 3: DEEP fiber layer (500 fibers, subtle, creates base texture)
+  for(var f=0;f<500;f++){
+    var fa=(f/500)*6.2832+Math.random()*0.015;
+    var innerR=pupilH*0.5+Math.random()*pupilH*0.4;
+    var outerR=innerR+Math.random()*(irisR-innerR)*0.9;
+    var hue=15+~~(Math.random()*30); // 15-45 range (amber spectrum)
+    var sat=70+~~(Math.random()*25);
+    var lum=20+~~(Math.random()*35);
+    x.strokeStyle='hsla('+hue+','+sat+'%,'+lum+'%,'+(0.06+Math.random()*0.15)+')';
+    x.lineWidth=0.3+Math.random()*0.8;
     x.beginPath();
     x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
-    var midR=(innerR+outerR)/2;
-    x.quadraticCurveTo(cx+Math.cos(fa+0.015)*midR+(Math.random()-0.5)*4,cy+Math.sin(fa+0.015)*midR+(Math.random()-0.5)*4,cx+Math.cos(fa)*outerR,cy+Math.sin(fa)*outerR);
+    x.lineTo(cx+Math.cos(fa+Math.random()*0.01-0.005)*outerR,cy+Math.sin(fa+Math.random()*0.01-0.005)*outerR);
     x.stroke();
   }
 
-  // Gold/hot flecks
-  for(var fl=0;fl<60;fl++){
-    var fla=Math.random()*Math.PI*2;
-    var flr=pupilH*0.7+Math.random()*(irisR*0.85-pupilH*0.7);
-    x.fillStyle='rgba(255,'+(160+~~(Math.random()*80))+',20,'+(0.15+Math.random()*0.4)+')';
-    x.beginPath();x.arc(cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,0.5+Math.random()*2.5,0,Math.PI*2);x.fill();
+  // Pass 4: BRIGHT fiber layer (300 fibers, more visible, creates the striation)
+  for(var f=0;f<300;f++){
+    var fa=(f/300)*6.2832+Math.random()*0.02;
+    var innerR=pupilH*0.55+Math.random()*pupilH*0.2;
+    var outerR=innerR+Math.random()*(irisR*0.95-innerR);
+    var hue=20+~~(Math.random()*25);
+    var lum=35+~~(Math.random()*45);
+    x.strokeStyle='hsla('+hue+',85%,'+lum+'%,'+(0.1+Math.random()*0.3)+')';
+    x.lineWidth=0.5+Math.random()*1.8;
+    x.beginPath();
+    x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
+    var midR=(innerR+outerR)*0.5;
+    var drift=(Math.random()-0.5)*6;
+    x.quadraticCurveTo(
+      cx+Math.cos(fa+0.01)*midR+drift,
+      cy+Math.sin(fa+0.01)*midR+drift,
+      cx+Math.cos(fa-0.005)*outerR,cy+Math.sin(fa-0.005)*outerR
+    );
+    x.stroke();
   }
 
-  // Inner hot ring around pupil
-  var hr=x.createRadialGradient(cx,cy,pupilH*0.3,cx,cy,pupilH*1.2);
-  hr.addColorStop(0,'rgba(255,180,50,0.4)');hr.addColorStop(0.5,'rgba(255,120,0,0.15)');hr.addColorStop(1,'transparent');
-  x.fillStyle=hr;x.beginPath();x.arc(cx,cy,pupilH*1.2,0,Math.PI*2);x.fill();
+  // Pass 5: GOLD HIGHLIGHT fibers (150 fibers, bright, create the luminous quality)
+  for(var f=0;f<150;f++){
+    var fa=(f/150)*6.2832+Math.random()*0.03;
+    var innerR=pupilH*0.6+Math.random()*pupilH*0.3;
+    var outerR=innerR+Math.random()*(irisR*0.8-innerR);
+    x.strokeStyle='hsla('+(25+~~(Math.random()*15))+',100%,'+(55+~~(Math.random()*30))+'%,'+(0.08+Math.random()*0.18)+')';
+    x.lineWidth=0.3+Math.random()*1.2;
+    x.beginPath();
+    x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
+    x.lineTo(cx+Math.cos(fa)*outerR,cy+Math.sin(fa)*outerR);
+    x.stroke();
+  }
 
-  x.restore();
+  // Pass 6: Collarette ring (mid-iris boundary)
+  x.strokeStyle='rgba(200,130,40,0.2)';x.lineWidth=2.5;
+  x.beginPath();x.arc(cx,cy,irisR*0.52,0,6.28);x.stroke();
+  x.strokeStyle='rgba(255,180,60,0.12)';x.lineWidth=1.5;
+  x.beginPath();x.arc(cx,cy,irisR*0.54,0,6.28);x.stroke();
 
-  // === VERTICAL SLIT PUPIL ===
+  // Pass 7: Hot flecks (bright amber/gold spots)
+  for(var fl=0;fl<80;fl++){
+    var fla=Math.random()*6.28;
+    var flr=pupilH*0.6+Math.random()*(irisR*0.85-pupilH*0.6);
+    var flSize=0.8+Math.random()*3;
+    var g=x.createRadialGradient(cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,0,
+      cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,flSize*2);
+    g.addColorStop(0,'rgba(255,'+(180+~~(Math.random()*70))+',30,'+(0.3+Math.random()*0.5)+')');
+    g.addColorStop(1,'transparent');
+    x.fillStyle=g;
+    x.beginPath();x.arc(cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,flSize*2,0,6.28);x.fill();
+  }
+
+  // Pass 8: Dark crypt structures (dark spots between fibers)
+  for(var d=0;d<40;d++){
+    var da=Math.random()*6.28;
+    var dr=irisR*0.55+Math.random()*irisR*0.35;
+    x.fillStyle='rgba(20,8,0,'+(0.1+Math.random()*0.2)+')';
+    x.beginPath();x.arc(cx+Math.cos(da)*dr,cy+Math.sin(da)*dr,1+Math.random()*3,0,6.28);x.fill();
+  }
+
+  // Pass 9: Inner fire glow around pupil
+  var hr1=x.createRadialGradient(cx,cy,pupilH*0.2,cx,cy,pupilH*1.4);
+  hr1.addColorStop(0,'rgba(255,200,80,0.5)');
+  hr1.addColorStop(0.3,'rgba(255,150,30,0.25)');
+  hr1.addColorStop(0.6,'rgba(255,100,0,0.1)');
+  hr1.addColorStop(1,'transparent');
+  x.fillStyle=hr1;x.beginPath();x.arc(cx,cy,pupilH*1.4,0,6.28);x.fill();
+
+  x.restore(); // unclip iris
+
+  // ====== VERTICAL SLIT PUPIL ======
+  // Main black slit
   x.fillStyle='#000';
   x.beginPath();
-  // Pointed ellipse (slit shape) using bezier curves
   x.moveTo(cx, cy-pupilH);
-  x.bezierCurveTo(cx+pupilW,cy-pupilH*0.4, cx+pupilW,cy+pupilH*0.4, cx,cy+pupilH);
-  x.bezierCurveTo(cx-pupilW,cy+pupilH*0.4, cx-pupilW,cy-pupilH*0.4, cx,cy-pupilH);
+  x.bezierCurveTo(cx+pupilW*1.3, cy-pupilH*0.35, cx+pupilW*1.3, cy+pupilH*0.35, cx, cy+pupilH);
+  x.bezierCurveTo(cx-pupilW*1.3, cy+pupilH*0.35, cx-pupilW*1.3, cy-pupilH*0.35, cx, cy-pupilH);
   x.fill();
 
-  // Pupil inner glow edges
-  x.strokeStyle='rgba(255,120,0,0.3)';x.lineWidth=2;
+  // Pupil depth gradient (slightly lighter in center for depth)
+  var pg = x.createRadialGradient(cx,cy,0,cx,cy,pupilW*2);
+  pg.addColorStop(0,'rgba(10,5,0,0.3)');
+  pg.addColorStop(1,'rgba(0,0,0,0.8)');
+  x.fillStyle=pg;
   x.beginPath();
-  x.moveTo(cx,cy-pupilH);
-  x.bezierCurveTo(cx+pupilW,cy-pupilH*0.4,cx+pupilW,cy+pupilH*0.4,cx,cy+pupilH);
-  x.bezierCurveTo(cx-pupilW,cy+pupilH*0.4,cx-pupilW,cy-pupilH*0.4,cx,cy-pupilH);
+  x.moveTo(cx, cy-pupilH);
+  x.bezierCurveTo(cx+pupilW*1.3, cy-pupilH*0.35, cx+pupilW*1.3, cy+pupilH*0.35, cx, cy+pupilH);
+  x.bezierCurveTo(cx-pupilW*1.3, cy+pupilH*0.35, cx-pupilW*1.3, cy-pupilH*0.35, cx, cy-pupilH);
+  x.fill();
+
+  // Inner glow along slit edges
+  x.strokeStyle='rgba(255,140,20,0.35)';x.lineWidth=2;
+  x.beginPath();
+  x.moveTo(cx, cy-pupilH);
+  x.bezierCurveTo(cx+pupilW*1.3, cy-pupilH*0.35, cx+pupilW*1.3, cy+pupilH*0.35, cx, cy+pupilH);
+  x.stroke();
+  x.beginPath();
+  x.moveTo(cx, cy-pupilH);
+  x.bezierCurveTo(cx-pupilW*1.3, cy-pupilH*0.35, cx-pupilW*1.3, cy+pupilH*0.35, cx, cy+pupilH);
   x.stroke();
 
-  // === CATCHLIGHT ===
-  var clx=cx-irisR*0.25,cly=cy-irisR*0.3;
-  var clg=x.createRadialGradient(clx,cly,0,clx,cly,irisR*0.18);
-  clg.addColorStop(0,'rgba(255,255,255,0.85)');clg.addColorStop(0.4,'rgba(255,255,255,0.3)');clg.addColorStop(1,'transparent');
-  x.fillStyle=clg;x.beginPath();x.arc(clx,cly,irisR*0.18,0,Math.PI*2);x.fill();
+  // Softer outer glow on slit
+  x.strokeStyle='rgba(255,100,0,0.15)';x.lineWidth=5;
+  x.beginPath();
+  x.moveTo(cx, cy-pupilH*0.95);
+  x.bezierCurveTo(cx+pupilW*1.8, cy-pupilH*0.3, cx+pupilW*1.8, cy+pupilH*0.3, cx, cy+pupilH*0.95);
+  x.stroke();
+  x.beginPath();
+  x.moveTo(cx, cy-pupilH*0.95);
+  x.bezierCurveTo(cx-pupilW*1.8, cy-pupilH*0.3, cx-pupilW*1.8, cy+pupilH*0.3, cx, cy+pupilH*0.95);
+  x.stroke();
 
-  // Small secondary catchlight
-  x.fillStyle='rgba(255,255,255,0.4)';
-  x.beginPath();x.arc(cx+irisR*0.15,cy+irisR*0.2,irisR*0.06,0,Math.PI*2);x.fill();
+  // ====== CATCHLIGHTS ======
+  // Primary (top-left, large, bright)
+  var clx=cx-irisR*0.22,cly=cy-irisR*0.28;
+  var clg=x.createRadialGradient(clx,cly,0,clx,cly,irisR*0.16);
+  clg.addColorStop(0,'rgba(255,255,255,0.9)');
+  clg.addColorStop(0.2,'rgba(255,255,255,0.6)');
+  clg.addColorStop(0.5,'rgba(255,220,180,0.2)');
+  clg.addColorStop(1,'transparent');
+  x.fillStyle=clg;x.beginPath();x.arc(clx,cly,irisR*0.16,0,6.28);x.fill();
+  
+  // Secondary (bottom-right, subtle)
+  var cl2x=cx+irisR*0.18,cl2y=cy+irisR*0.22;
+  var cl2g=x.createRadialGradient(cl2x,cl2y,0,cl2x,cl2y,irisR*0.08);
+  cl2g.addColorStop(0,'rgba(255,255,255,0.5)');
+  cl2g.addColorStop(1,'transparent');
+  x.fillStyle=cl2g;x.beginPath();x.arc(cl2x,cl2y,irisR*0.08,0,6.28);x.fill();
 
-  // Vignette
-  var vg=x.createRadialGradient(cx,cy,irisR*0.5,cx,cy,size*0.5);
-  vg.addColorStop(0,'transparent');vg.addColorStop(0.6,'transparent');vg.addColorStop(1,'rgba(0,0,0,0.85)');
-  x.fillStyle=vg;x.fillRect(0,0,size,size);
+  // Tiny sparkle catchlights
+  for(var sp=0;sp<5;sp++){
+    var spx=cx+(Math.random()-0.5)*irisR*0.8;
+    var spy=cy+(Math.random()-0.5)*irisR*0.6;
+    x.fillStyle='rgba(255,255,255,'+(0.15+Math.random()*0.2)+')';
+    x.beginPath();x.arc(spx,spy,0.5+Math.random()*1,0,6.28);x.fill();
+  }
+
+  // ====== EYELID SHADOWS (create the almond shape) ======
+  // Heavy top shadow (upper eyelid)
+  var tsG = x.createLinearGradient(0, 0, 0, cy*0.7);
+  tsG.addColorStop(0,'rgba(0,0,0,0.98)');
+  tsG.addColorStop(0.6,'rgba(5,2,0,0.85)');
+  tsG.addColorStop(1,'transparent');
+  x.fillStyle=tsG;x.fillRect(0,0,S,cy*0.7);
+
+  // Bottom shadow (lower eyelid)
+  var bsG = x.createLinearGradient(0, cy+cy*0.35, 0, S);
+  bsG.addColorStop(0,'transparent');
+  bsG.addColorStop(0.4,'rgba(5,2,0,0.8)');
+  bsG.addColorStop(1,'rgba(0,0,0,0.95)');
+  x.fillStyle=bsG;x.fillRect(0,cy+cy*0.3,S,S);
+
+  // Side shadows (narrow the eye into almond)
+  var lsG = x.createLinearGradient(0,0,S*0.2,0);
+  lsG.addColorStop(0,'rgba(0,0,0,0.9)');lsG.addColorStop(1,'transparent');
+  x.fillStyle=lsG;x.fillRect(0,0,S*0.25,S);
+  
+  var rsG = x.createLinearGradient(S,0,S*0.8,0);
+  rsG.addColorStop(0,'rgba(0,0,0,0.9)');rsG.addColorStop(1,'transparent');
+  x.fillStyle=rsG;x.fillRect(S*0.75,0,S*0.25,S);
+
+  // Overall vignette
+  var vg=x.createRadialGradient(cx,cy,irisR*0.6,cx,cy,S*0.52);
+  vg.addColorStop(0,'transparent');
+  vg.addColorStop(0.55,'transparent');
+  vg.addColorStop(0.8,'rgba(0,0,0,0.5)');
+  vg.addColorStop(1,'rgba(0,0,0,0.95)');
+  x.fillStyle=vg;x.fillRect(0,0,S,S);
 
   return new THREE.CanvasTexture(c);
 }
 
 // Create eye meshes
-var eyeTex = makeDragonEyeTexture(1024);
+var eyeTex = makeDragonEyeTexture(768);
 eyeTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+document.getElementById('loadBar').style.width='60%';
 
 // Use PLANES facing camera so texture renders perfectly
-var eyeGeo = new THREE.PlaneGeometry(2.4, 1.5);
+var eyeGeo = new THREE.PlaneGeometry(3.2, 2.4);
 
-var eyeMatL = new THREE.MeshBasicMaterial({map: eyeTex, transparent: true, blending: THREE.NormalBlending});
-var eyeMatR = new THREE.MeshBasicMaterial({map: eyeTex, transparent: true, blending: THREE.NormalBlending});
+var eyeMatL = new THREE.MeshBasicMaterial({map: eyeTex, transparent: true});
+var eyeMatR = new THREE.MeshBasicMaterial({map: eyeTex, transparent: true});
 
 var eyeL = new THREE.Mesh(eyeGeo.clone(), eyeMatL);
 var eyeR = new THREE.Mesh(eyeGeo.clone(), eyeMatR);
 
-eyeL.position.set(-1.55, -0.2, 0.5);
-eyeR.position.set(1.55, -0.2, 0.5);
-// Slight tilt inward
-eyeL.rotation.y = 0.12;
-eyeR.rotation.y = -0.12;
+eyeL.position.set(-1.8, -0.15, 0.5);
+eyeR.position.set(1.8, -0.15, 0.5);
+eyeL.rotation.y = 0.1;
+eyeR.rotation.y = -0.1;
 
 scene.add(eyeL);
 scene.add(eyeR);
 
 // Eye glow (point lights behind each eye)
 var glowL = new THREE.PointLight(0xff6600, 3, 8);
-glowL.position.set(-1.55, -0.2, 1.5);
+glowL.position.set(-1.8, -0.15, 1.5);
 scene.add(glowL);
 var glowR = new THREE.PointLight(0xff6600, 3, 8);
-glowR.position.set(1.55, -0.2, 1.5);
+glowR.position.set(1.8, -0.15, 1.5);
 scene.add(glowR);
 
 // Ambient warm
@@ -355,12 +526,12 @@ scene.add(fireSprite);
 
 // Secondary glow under each eye
 var glowSpriteL = new THREE.Sprite(new THREE.SpriteMaterial({map:fireTex,blending:THREE.AdditiveBlending,transparent:true,opacity:0.3}));
-glowSpriteL.position.set(-1.55, -0.8, 0.3);
-glowSpriteL.scale.set(3, 2, 1);
+glowSpriteL.position.set(-1.8, -1.0, 0.3);
+glowSpriteL.scale.set(3.5, 2.5, 1);
 scene.add(glowSpriteL);
 var glowSpriteR = new THREE.Sprite(new THREE.SpriteMaterial({map:fireTex,blending:THREE.AdditiveBlending,transparent:true,opacity:0.3}));
-glowSpriteR.position.set(1.55, -0.8, 0.3);
-glowSpriteR.scale.set(3, 2, 1);
+glowSpriteR.position.set(1.8, -1.0, 0.3);
+glowSpriteR.scale.set(3.5, 2.5, 1);
 scene.add(glowSpriteR);
 
 // --- MAGIC DUST / EMBER PARTICLES around eyes ---
@@ -440,6 +611,7 @@ function createShootingStar(){
   scene.add(group);shootingStars.push(group);
 }
 setInterval(function(){if(shootingStars.length<6)createShootingStar();},1200);
+document.getElementById('loadBar').style.width='85%';
 
 // --- Animate ---
 var clock = new THREE.Clock();
@@ -454,14 +626,14 @@ function animate3D() {
   var t = clock.getElapsedTime();
 
   // Eye float
-  eyeL.position.y = -0.2 + Math.sin(t*0.8)*0.06;
-  eyeR.position.y = -0.2 + Math.sin(t*0.8+0.5)*0.06;
+  eyeL.position.y = -0.15 + Math.sin(t*0.8)*0.06;
+  eyeR.position.y = -0.15 + Math.sin(t*0.8+0.5)*0.06;
 
   // Eyes follow mouse
   eyeL.rotation.x = -mouseY * 0.06;
-  eyeL.rotation.y = 0.12 + mouseX * 0.05;
+  eyeL.rotation.y = 0.10 + mouseX * 0.05;
   eyeR.rotation.x = -mouseY * 0.06;
-  eyeR.rotation.y = -0.12 + mouseX * 0.05;
+  eyeR.rotation.y = -0.10 + mouseX * 0.05;
 
   // Glow pulse — faster, more dramatic
   glowL.intensity = 2 + Math.sin(t*3)*1.2;
@@ -499,6 +671,13 @@ function animate3D() {
 
   renderer.render(scene, camera);
 }
+// Loading complete — hide loader, start animation
+document.getElementById('loadBar').style.width='100%';
+setTimeout(function(){
+  var loader=document.getElementById('loader');
+  loader.style.opacity='0';
+  setTimeout(function(){loader.style.display='none';},1500);
+},300);
 animate3D();
 
 // Resize handler
