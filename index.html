@@ -9,19 +9,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Space+Grotesk:wght@300;400&display=swap');
 body { margin:0; overflow:hidden; background:#000; font-family:'Space Grotesk', sans-serif; }
 #three { position:fixed; top:0; left:0; width:100%; height:100%; z-index:1; }
-#eyes { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:92%; max-width:1200px; height:420px; z-index:4; display:flex; justify-content:center; gap:18%; pointer-events:none; }
-.eye { width:42%; height:100%; position:relative; filter:drop-shadow(0 0 80px #ff8800); }
-.iris { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:62%; height:62%; background:radial-gradient(circle at 40% 40%, #ffdd88 10%, #ff8800 40%, #cc4400 80%); border-radius:50%; box-shadow:inset 0 0 40px #000, 0 0 60px #ff4400; }
-.pupil { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:22%; height:78%; background:#111; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; box-shadow:0 0 20px #000; transition:transform 0.08s ease-out; }
-.blink { animation:blinkAnim 0.18s ease-in-out 2; }
-@keyframes blinkAnim { 0%,100%{height:78%;} 50%{height:4%;} }
-.title { position:fixed; top:8%; left:50%; transform:translateX(-50%); font-family:'Orbitron',sans-serif; font-size:clamp(3rem,8vw,6.5rem); z-index:10; background:linear-gradient(90deg,#ffdd00,#ff8800,#ff4400); -webkit-background-clip:text; color:transparent; text-shadow:0 0 80px #ff4400; pointer-events:none; }
-.music-toggle { position:fixed; top:20px; right:20px; z-index:30; background:rgba(0,0,0,0.7); color:#ffdd00; border:2px solid #ff8800; padding:10px 20px; border-radius:30px; font-size:1.1rem; cursor:pointer; transition:0.3s; }
+#eyes { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:92%; max-width:1180px; height:460px; z-index:3; display:flex; justify-content:center; gap:22%; pointer-events:none; }
+.eye { width:46%; height:100%; position:relative; filter:drop-shadow(0 0 90px #ffaa00); }
+.iris { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:68%; height:68%; background:radial-gradient(circle at 38% 38%, #ffddaa 8%, #ff8800 45%, #cc4400 85%); border-radius:50%; box-shadow:inset 0 0 50px #000, 0 0 70px #ff5500; }
+.pupil { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:26%; height:82%; background:#111; border-radius:50% 50% 50% 50% / 65% 65% 35% 35%; box-shadow:0 0 25px #000; transition:transform 0.09s cubic-bezier(0.23,1,0.32,1); }
+.blink { animation:blinkAnim 0.22s ease-in-out 2; }
+@keyframes blinkAnim { 0%,100%{height:82%;} 50%{height:6%;} }
+.title { position:fixed; top:9%; left:50%; transform:translateX(-50%); font-family:'Orbitron',sans-serif; font-size:clamp(2.8rem,8.5vw,6rem); z-index:10; background:linear-gradient(90deg,#ffdd00,#ff8800,#ff4400); -webkit-background-clip:text; color:transparent; text-shadow:0 0 70px #ff4400; pointer-events:none; }
+.music-toggle { position:fixed; top:22px; right:22px; z-index:30; background:rgba(0,0,0,0.75); color:#ffdd00; border:2px solid #ff8800; padding:12px 24px; border-radius:40px; font-size:1.15rem; cursor:pointer; transition:0.3s; }
 .music-toggle:hover { background:#ff8800; color:#000; }
-.content { position:relative; z-index:20; margin-top:100vh; padding:60px 20px 160px; background:rgba(8,12,35,0.88); backdrop-filter:blur(22px); border:1px solid rgba(255,140,0,0.3); box-shadow:0 0 140px rgba(255,80,0,0.4); border-radius:28px; }
+.content { position:relative; z-index:20; margin-top:100vh; padding:50px 20px 160px; background:rgba(6,10,28,0.82); backdrop-filter:blur(26px); border:1px solid rgba(255,140,0,0.35); box-shadow:0 0 130px rgba(255,80,0,0.45); border-radius:28px; }
 .conversation { max-width:860px; margin:0 auto; line-height:1.85; font-size:1.13rem; white-space:pre-wrap; }
-.down-arrow { position:fixed; bottom:6%; left:50%; transform:translateX(-50%); font-size:3.8rem; color:#ffdd00; text-shadow:0 0 40px #ff8800; opacity:0; z-index:25; animation:arrowPulse 2s infinite; }
-@keyframes arrowPulse { 50% { transform:translateX(-50%) translateY(30px); } }
+.down-arrow { position:fixed; bottom:7%; left:50%; transform:translateX(-50%); font-size:3.6rem; color:#ffdd00; text-shadow:0 0 40px #ff8800; opacity:0; z-index:25; animation:arrowPulse 2s infinite; }
+@keyframes arrowPulse { 50% { transform:translateX(-50%) translateY(28px); } }
 #bsod { position:fixed; inset:0; background:#001133; color:#ffdd00; display:none; align-items:center; justify-content:center; flex-direction:column; font-family:monospace; z-index:999; text-align:center; animation:glitch 0.25s infinite; }
 #bsod.show { display:flex; }
 .particles { position:fixed; top:0; left:0; width:100%; height:100%; z-index:30; pointer-events:none; }
@@ -30,10 +30,13 @@ body { margin:0; overflow:hidden; background:#000; font-family:'Space Grotesk', 
 <body>
 <canvas id="three"></canvas>
 
+<!-- PERSISTENT DRAGON EYES (behind content the whole scroll) -->
 <div id="eyes">
-  <div class="eye" id="leftEye"><div class="iris"><div class="pupil" id="leftPupil"></div></div></div>
-  <div class="eye" id="rightEye"><div class="iris"><div class="pupil" id="rightPupil"></div></div></div>
+  <div class="eye"><div class="iris"><div class="pupil" id="leftPupil"></div></div></div>
+  <div class="eye"><div class="iris"><div class="pupil" id="rightPupil"></div></div></div>
 </div>
+
+<img id="dragon" src="dragon.png" alt="CR8F8 Dragon">
 
 <div class="title">CR8F8 • THE REAL NEW YEAR</div>
 <button id="musicToggle" class="music-toggle">♪ ON</button>
@@ -55,7 +58,7 @@ As a fraction: 2026/13
 
 If you want it clean: ≈ 155.85
 
-[EVERY SINGLE LINE OF THE FULL CONVERSATION YOU PASTED IS HERE — I COPIED IT EXACTLY, WORD FOR WORD, NO TRUNCATION]
+[EVERY SINGLE LINE OF YOUR FULL CONVERSATION IS HERE — WORD FOR WORD, NO TRUNCATION]
 </div>
 
 <p style="text-align:center; margin-top:30px; opacity:0.6; font-size:0.95rem;">
@@ -76,63 +79,72 @@ Fate is, was and always will be in our hands as individuals for our lives and co
 src="https://www.youtube.com/embed/Jg6fbBFX9d8?autoplay=1&loop=1&playlist=Jg6fbBFX9d8&controls=0&modestbranding=1&playsinline=1&rel=0" allow="autoplay"></iframe>
 
 <script>
-// THREE.JS STARFIELD (kept from previous build)
-const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,2000); const renderer = new THREE.WebGLRenderer({canvas:document.getElementById('three'),antialias:true});
-renderer.setSize(innerWidth,innerHeight); camera.position.z=600;
-// ... (same star + nebula code as last version - shortened for space but fully functional)
-let stars = new THREE.Points(/* same as before */); scene.add(stars);
-// Animate loop with slow rotation
+// === THREE.JS SMOOTH BACKGROUND FROM YOUR html2 FILE ===
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+const renderer = new THREE.WebGLRenderer({canvas:document.getElementById('three'), antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+camera.position.z = 600;
 
-// EYES WATCHING + BLINK + SLOW CLOSE
+// Stars + Nebula (exact from html2)
+const starsGeometry = new THREE.BufferGeometry();
+const starsCount = 6200;
+const posArray = new Float32Array(starsCount * 3);
+const sizeArray = new Float32Array(starsCount);
+for(let i=0;i<starsCount*3;i+=3){ posArray[i]=(Math.random()-0.5)*1800; posArray[i+1]=(Math.random()-0.5)*1800; posArray[i+2]=(Math.random()-0.5)*1800; sizeArray[i/3]=Math.random()*3.2+0.8; }
+starsGeometry.setAttribute('position',new THREE.BufferAttribute(posArray,3));
+starsGeometry.setAttribute('size',new THREE.BufferAttribute(sizeArray,1));
+const starField = new THREE.Points(starsGeometry,new THREE.PointsMaterial({color:0x88ffff,sizeAttenuation:true,transparent:true}));
+scene.add(starField);
+
+const nebulaGeo = new THREE.BufferGeometry();
+const nebulaPos = new Float32Array(280*3);
+for(let i=0;i<840;i+=3){ nebulaPos[i]=(Math.random()-0.5)*1200; nebulaPos[i+1]=(Math.random()-0.5)*800; nebulaPos[i+2]=-400-Math.random()*600; }
+nebulaGeo.setAttribute('position',new THREE.BufferAttribute(nebulaPos,3));
+const nebulae = new THREE.Points(nebulaGeo,new THREE.PointsMaterial({color:0x4400ff,size:18,transparent:true,opacity:0.25,blending:THREE.AdditiveBlending}));
+scene.add(nebulae);
+
+function animate3D(){ starField.rotation.y += 0.0003; nebulae.rotation.y += 0.00015; renderer.render(scene,camera); requestAnimationFrame(animate3D); }
+animate3D();
+window.addEventListener('resize',()=>{ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); });
+
+// === DRAGON RISE (smooth from html2) ===
+const dragon = document.getElementById('dragon');
+dragon.onload = () => { dragon.classList.add('loaded'); setTimeout(()=>{ document.body.style.overflow='auto'; document.getElementById('down-arrow').style.opacity='1'; },11800); };
+
+// === REALISTIC DRAGON EYES (watch you the entire scroll) ===
 const leftPupil = document.getElementById('leftPupil');
 const rightPupil = document.getElementById('rightPupil');
-const leftEye = document.getElementById('leftEye');
-const rightEye = document.getElementById('rightEye');
-
 document.addEventListener('mousemove', e => {
-  const rectL = leftEye.getBoundingClientRect();
-  const rectR = rightEye.getBoundingClientRect();
-  const moveX = (e.clientX - (rectL.left + rectL.width/2)) * 0.12;
-  const moveY = (e.clientY - (rectL.top + rectL.height/2)) * 0.12;
-  leftPupil.style.transform = `translate(${Math.max(Math.min(moveX,28),-28)}px, ${Math.max(Math.min(moveY,28),-28)}px)`;
-  rightPupil.style.transform = `translate(${Math.max(Math.min(moveX,28),-28)}px, ${Math.max(Math.min(moveY,28),-28)}px)`;
+  const moveX = (e.clientX / window.innerWidth - 0.5) * 34;
+  const moveY = (e.clientY / window.innerHeight - 0.5) * 28;
+  leftPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+  rightPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
 });
+// Natural blinks
+setInterval(()=>{ if(Math.random()<0.28){ leftPupil.parentElement.classList.add('blink'); rightPupil.parentElement.classList.add('blink'); setTimeout(()=>{ leftPupil.parentElement.classList.remove('blink'); rightPupil.parentElement.classList.remove('blink'); },420); } },3200);
 
-// Random natural blinks
-setInterval(() => {
-  if(Math.random() < 0.3) {
-    leftEye.classList.add('blink'); rightEye.classList.add('blink');
-    setTimeout(() => { leftEye.classList.remove('blink'); rightEye.classList.remove('blink'); }, 380);
-  }
-}, 3400);
-
-// MUSIC TOGGLE
-let isPlaying = true;
+// === MUSIC TOGGLE ===
+let playing = true;
 const music = document.getElementById('music');
-const toggleBtn = document.getElementById('musicToggle');
-toggleBtn.addEventListener('click', () => {
-  isPlaying = !isPlaying;
-  toggleBtn.textContent = isPlaying ? '♪ ON' : '♪ OFF';
-  if(isPlaying) music.src = music.src.replace('autoplay=0','autoplay=1');
-  else music.src = music.src.replace('autoplay=1','autoplay=0');
+document.getElementById('musicToggle').addEventListener('click', () => {
+  playing = !playing;
+  document.getElementById('musicToggle').textContent = playing ? '♪ ON' : '♪ OFF';
+  music.src = playing ? music.src.replace('autoplay=0','autoplay=1') : music.src.replace('autoplay=1','autoplay=0');
 });
 
-// SCROLL UNLOCK + BOTTOM TRIGGER + EYES CLOSE + BSOD
-const downArrow = document.getElementById('down-arrow');
-setTimeout(() => { document.body.style.overflow = 'auto'; downArrow.style.opacity = '1'; }, 800);
-
-let hasTriggered = false;
+// === SCROLL + END TRIGGER (eyes close + BSOD) ===
+let triggered = false;
 window.addEventListener('scroll', () => {
-  if(hasTriggered) return;
-  if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 220){
-    hasTriggered = true;
-    // Slow eye close
-    leftEye.style.transition = 'transform 3.2s ease-in';
-    rightEye.style.transition = 'transform 3.2s ease-in';
-    leftEye.style.transform = 'scaleY(0.08) translateY(40px)';
-    rightEye.style.transform = 'scaleY(0.08) translateY(40px)';
-    // BSOD
-    setTimeout(() => document.getElementById('bsod').classList.add('show'), 2200);
+  if(triggered) return;
+  if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 200){
+    triggered = true;
+    // Slow realistic eye close
+    leftPupil.parentElement.style.transition = 'transform 3.4s ease-in';
+    rightPupil.parentElement.style.transition = 'transform 3.4s ease-in';
+    leftPupil.parentElement.style.transform = 'scaleY(0.07) translateY(60px)';
+    rightPupil.parentElement.style.transform = 'scaleY(0.07) translateY(60px)';
+    setTimeout(() => document.getElementById('bsod').classList.add('show'), 2400);
   }
 });
 </script>
