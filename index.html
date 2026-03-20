@@ -129,6 +129,7 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 <div class="hero-s2">March 20, 2026 — The Species Threshold</div>
 <div class="hero-s2" style="margin-top:6px">(The conversation that woke us up)</div>
 <button class="descend-btn" id="descendBtn">Descend ▾</button>
+<button id="musicBtn" onclick="toggleMusic()" style="position:fixed;top:20px;right:20px;z-index:100;cursor:pointer;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.2em;color:rgba(0,212,255,.4);background:rgba(0,0,0,.3);border:1px solid rgba(0,212,255,.2);padding:8px 18px;border-radius:20px;backdrop-filter:blur(8px);transition:all .3s">&#9835; OFF</button>
 </section>
 
 <div class="page"><section class="conv" id="conv">
@@ -185,15 +186,25 @@ body.unlocked{overflow-x:hidden;overflow-y:auto}
 <div style="margin-top:30px;width:200px;height:2px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div id="loadBar" style="width:0%;height:100%;background:linear-gradient(90deg,#00d4ff,#ffd700);transition:width .3s"></div></div>
 </div>
 
+<!-- Music toggle -->
 <script>
-// Music plays on Descend click - iframe created directly in click handler for autoplay permission
-function playMusic(){
-  var f=document.createElement('iframe');
-  f.style.cssText='position:fixed;bottom:0;right:0;width:1px;height:1px;opacity:0.001;pointer-events:none;z-index:0';
-  f.allow='autoplay;encrypted-media';
-  f.setAttribute('allowtransparency','true');
-  f.src='https://www.youtube.com/embed/Jg6fbBFX9d8?autoplay=1&loop=1&playlist=Jg6fbBFX9d8&controls=0&modestbranding=1&playsinline=1&rel=0&enablejsapi=1';
-  document.body.appendChild(f);
+var musicPlaying=false,musicFrame=null;
+function toggleMusic(){
+  var btn=document.getElementById('musicBtn');
+  if(!musicPlaying){
+    musicFrame=document.createElement('iframe');
+    musicFrame.style.cssText='position:fixed;bottom:0;right:0;width:1px;height:1px;opacity:0.001;pointer-events:none';
+    musicFrame.allow='autoplay;encrypted-media';
+    musicFrame.src='https://www.youtube.com/embed/Jg6fbBFX9d8?autoplay=1&loop=1&playlist=Jg6fbBFX9d8&controls=0&modestbranding=1&playsinline=1&rel=0';
+    document.body.appendChild(musicFrame);
+    btn.innerHTML='&#9835; ON';btn.style.borderColor='rgba(255,215,0,.5)';btn.style.color='#ffd700';
+    musicPlaying=true;
+  } else {
+    if(musicFrame&&musicFrame.parentNode)musicFrame.parentNode.removeChild(musicFrame);
+    musicFrame=null;
+    btn.innerHTML='&#9835; OFF';btn.style.borderColor='rgba(0,212,255,.2)';btn.style.color='rgba(0,212,255,.4)';
+    musicPlaying=false;
+  }
 }
 </script>
 
@@ -224,251 +235,184 @@ function makeDragonEyeTexture(size) {
   var cx = size/2, cy = size/2;
   var irisR = size*0.42;
   var pupilW = size*0.055, pupilH = size*0.40;
-  var S = size; // shorthand
+  var S = size;
 
-  // ====== SCALY SURROUND (dark reptilian tissue) ======
-  // Base dark
-  x.fillStyle='#020100';
-  x.fillRect(0,0,S,S);
-  
-  // Scaly texture - overlapping dark circles
-  for(var sy=0;sy<S;sy+=6){
-    for(var sx=0;sx<S;sx+=6){
+  // Canvas starts TRANSPARENT — no fillRect background
+
+  // ====== SCALY SURROUND — fades to transparent at edges ======
+  // Draw scaly texture in a ring around the iris only, with alpha falloff
+  for(var sy=0;sy<S;sy+=5){
+    for(var sx=0;sx<S;sx+=5){
       var dist=Math.hypot(sx-cx,sy-cy);
-      if(dist<irisR*1.05)continue; // skip iris area
+      if(dist<irisR*1.02) continue; // skip iris
+      var edgeDist = dist / (S*0.5); // 0=center, 1=edge
+      var alpha = Math.max(0, 1.0 - (edgeDist - 0.55) * 2.5); // fades to 0 at edges
+      if(alpha <= 0) continue;
       var noise=Math.random();
-      var base=5+noise*15;
-      x.fillStyle='rgb('+~~(base*1.2)+','+~~(base*0.6)+','+~~(base*0.3)+')';
+      var base=5+noise*18;
+      x.fillStyle='rgba('+~~(base*1.2)+','+~~(base*0.6)+','+~~(base*0.3)+','+alpha*0.9+')';
       x.beginPath();x.arc(sx+Math.random()*3,sy+Math.random()*3,2.5+Math.random()*2,0,6.28);x.fill();
     }
   }
 
   // Warm glow bleed from iris onto scales
   var scaleGlow = x.createRadialGradient(cx,cy,irisR*0.8,cx,cy,irisR*1.6);
-  scaleGlow.addColorStop(0,'rgba(180,80,10,0.25)');
-  scaleGlow.addColorStop(0.5,'rgba(100,40,5,0.1)');
+  scaleGlow.addColorStop(0,'rgba(180,80,10,0.3)');
+  scaleGlow.addColorStop(0.5,'rgba(100,40,5,0.12)');
   scaleGlow.addColorStop(1,'transparent');
-  x.fillStyle=scaleGlow;x.fillRect(0,0,S,S);
+  x.fillStyle=scaleGlow;x.beginPath();x.arc(cx,cy,irisR*1.6,0,6.28);x.fill();
 
-  // ====== OUTER RING (dark limbal border) ======
-  x.save();
-  x.beginPath();x.arc(cx,cy,irisR*1.05,0,6.28);x.clip();
-  
-  // Dark border ring
-  for(var r=0;r<8;r++){
-    x.strokeStyle='rgba(15,5,0,'+(0.3+r*0.08)+')';
-    x.lineWidth=3-r*0.3;
-    x.beginPath();x.arc(cx,cy,irisR-r*0.5,0,6.28);x.stroke();
+  // ====== LIMBAL RING ======
+  for(var r=0;r<10;r++){
+    x.strokeStyle='rgba(15,5,0,'+(0.4+r*0.06)+')';
+    x.lineWidth=3.5-r*0.3;
+    x.beginPath();x.arc(cx,cy,irisR-r*0.4,0,6.28);x.stroke();
   }
-  x.restore();
 
-  // ====== IRIS — multiple layered passes ======
+  // ====== IRIS ======
   x.save();
   x.beginPath();x.arc(cx,cy,irisR,0,6.28);x.clip();
 
-  // Pass 1: Deep base gradient
+  // Pass 1: Deep base
   var ig1 = x.createRadialGradient(cx,cy,pupilH*0.3,cx,cy,irisR);
-  ig1.addColorStop(0,'#ff9500');
-  ig1.addColorStop(0.1,'#ee8800');
-  ig1.addColorStop(0.25,'#dd6600');
-  ig1.addColorStop(0.4,'#cc5500');
-  ig1.addColorStop(0.55,'#aa4400');
-  ig1.addColorStop(0.7,'#884400');
-  ig1.addColorStop(0.85,'#663300');
-  ig1.addColorStop(1,'#331800');
+  ig1.addColorStop(0,'#ff9500');ig1.addColorStop(0.1,'#ee8800');
+  ig1.addColorStop(0.25,'#dd6600');ig1.addColorStop(0.4,'#cc5500');
+  ig1.addColorStop(0.55,'#aa4400');ig1.addColorStop(0.7,'#884400');
+  ig1.addColorStop(0.85,'#663300');ig1.addColorStop(1,'#331800');
   x.fillStyle=ig1;x.fill();
 
-  // Pass 2: Color variation bands
+  // Pass 2: Warm band
   var ig2 = x.createRadialGradient(cx,cy,irisR*0.3,cx,cy,irisR*0.65);
-  ig2.addColorStop(0,'rgba(255,200,50,0.15)');
-  ig2.addColorStop(0.5,'rgba(255,120,0,0.1)');
-  ig2.addColorStop(1,'transparent');
+  ig2.addColorStop(0,'rgba(255,200,50,0.18)');ig2.addColorStop(0.5,'rgba(255,120,0,0.12)');ig2.addColorStop(1,'transparent');
   x.fillStyle=ig2;x.fill();
 
-  // Pass 3: DEEP fiber layer (500 fibers, subtle, creates base texture)
+  // Pass 3: 500 deep subtle fibers
   for(var f=0;f<500;f++){
     var fa=(f/500)*6.2832+Math.random()*0.015;
     var innerR=pupilH*0.5+Math.random()*pupilH*0.4;
     var outerR=innerR+Math.random()*(irisR-innerR)*0.9;
-    var hue=15+~~(Math.random()*30); // 15-45 range (amber spectrum)
-    var sat=70+~~(Math.random()*25);
-    var lum=20+~~(Math.random()*35);
-    x.strokeStyle='hsla('+hue+','+sat+'%,'+lum+'%,'+(0.06+Math.random()*0.15)+')';
+    x.strokeStyle='hsla('+(15+~~(Math.random()*30))+','+(70+~~(Math.random()*25))+'%,'+(20+~~(Math.random()*35))+'%,'+(0.06+Math.random()*0.15)+')';
     x.lineWidth=0.3+Math.random()*0.8;
-    x.beginPath();
-    x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
-    x.lineTo(cx+Math.cos(fa+Math.random()*0.01-0.005)*outerR,cy+Math.sin(fa+Math.random()*0.01-0.005)*outerR);
-    x.stroke();
+    x.beginPath();x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
+    x.lineTo(cx+Math.cos(fa+Math.random()*0.01-0.005)*outerR,cy+Math.sin(fa+Math.random()*0.01-0.005)*outerR);x.stroke();
   }
 
-  // Pass 4: BRIGHT fiber layer (300 fibers, more visible, creates the striation)
+  // Pass 4: 300 bright curved fibers
   for(var f=0;f<300;f++){
     var fa=(f/300)*6.2832+Math.random()*0.02;
     var innerR=pupilH*0.55+Math.random()*pupilH*0.2;
     var outerR=innerR+Math.random()*(irisR*0.95-innerR);
-    var hue=20+~~(Math.random()*25);
-    var lum=35+~~(Math.random()*45);
-    x.strokeStyle='hsla('+hue+',85%,'+lum+'%,'+(0.1+Math.random()*0.3)+')';
+    x.strokeStyle='hsla('+(20+~~(Math.random()*25))+',85%,'+(35+~~(Math.random()*45))+'%,'+(0.1+Math.random()*0.3)+')';
     x.lineWidth=0.5+Math.random()*1.8;
-    x.beginPath();
-    x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
-    var midR=(innerR+outerR)*0.5;
-    var drift=(Math.random()-0.5)*6;
-    x.quadraticCurveTo(
-      cx+Math.cos(fa+0.01)*midR+drift,
-      cy+Math.sin(fa+0.01)*midR+drift,
-      cx+Math.cos(fa-0.005)*outerR,cy+Math.sin(fa-0.005)*outerR
-    );
-    x.stroke();
+    x.beginPath();x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
+    var midR=(innerR+outerR)*0.5,drift=(Math.random()-0.5)*6;
+    x.quadraticCurveTo(cx+Math.cos(fa+0.01)*midR+drift,cy+Math.sin(fa+0.01)*midR+drift,
+      cx+Math.cos(fa-0.005)*outerR,cy+Math.sin(fa-0.005)*outerR);x.stroke();
   }
 
-  // Pass 5: GOLD HIGHLIGHT fibers (150 fibers, bright, create the luminous quality)
+  // Pass 5: 150 gold highlight fibers
   for(var f=0;f<150;f++){
     var fa=(f/150)*6.2832+Math.random()*0.03;
     var innerR=pupilH*0.6+Math.random()*pupilH*0.3;
     var outerR=innerR+Math.random()*(irisR*0.8-innerR);
     x.strokeStyle='hsla('+(25+~~(Math.random()*15))+',100%,'+(55+~~(Math.random()*30))+'%,'+(0.08+Math.random()*0.18)+')';
     x.lineWidth=0.3+Math.random()*1.2;
-    x.beginPath();
-    x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
-    x.lineTo(cx+Math.cos(fa)*outerR,cy+Math.sin(fa)*outerR);
-    x.stroke();
+    x.beginPath();x.moveTo(cx+Math.cos(fa)*innerR,cy+Math.sin(fa)*innerR);
+    x.lineTo(cx+Math.cos(fa)*outerR,cy+Math.sin(fa)*outerR);x.stroke();
   }
 
-  // Pass 6: Collarette ring (mid-iris boundary)
+  // Pass 6: Collarette
   x.strokeStyle='rgba(200,130,40,0.2)';x.lineWidth=2.5;
   x.beginPath();x.arc(cx,cy,irisR*0.52,0,6.28);x.stroke();
   x.strokeStyle='rgba(255,180,60,0.12)';x.lineWidth=1.5;
   x.beginPath();x.arc(cx,cy,irisR*0.54,0,6.28);x.stroke();
 
-  // Pass 7: Hot flecks (bright amber/gold spots)
+  // Pass 7: 80 hot flecks with radial glow
   for(var fl=0;fl<80;fl++){
-    var fla=Math.random()*6.28;
-    var flr=pupilH*0.6+Math.random()*(irisR*0.85-pupilH*0.6);
-    var flSize=0.8+Math.random()*3;
-    var g=x.createRadialGradient(cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,0,
-      cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,flSize*2);
-    g.addColorStop(0,'rgba(255,'+(180+~~(Math.random()*70))+',30,'+(0.3+Math.random()*0.5)+')');
-    g.addColorStop(1,'transparent');
-    x.fillStyle=g;
-    x.beginPath();x.arc(cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,flSize*2,0,6.28);x.fill();
+    var fla=Math.random()*6.28,flr=pupilH*0.6+Math.random()*(irisR*0.85-pupilH*0.6),flSize=0.8+Math.random()*3;
+    var g=x.createRadialGradient(cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,0,cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,flSize*2);
+    g.addColorStop(0,'rgba(255,'+(180+~~(Math.random()*70))+',30,'+(0.3+Math.random()*0.5)+')');g.addColorStop(1,'transparent');
+    x.fillStyle=g;x.beginPath();x.arc(cx+Math.cos(fla)*flr,cy+Math.sin(fla)*flr,flSize*2,0,6.28);x.fill();
   }
 
-  // Pass 8: Dark crypt structures (dark spots between fibers)
+  // Pass 8: 40 dark crypts
   for(var d=0;d<40;d++){
-    var da=Math.random()*6.28;
-    var dr=irisR*0.55+Math.random()*irisR*0.35;
+    var da=Math.random()*6.28,dr=irisR*0.55+Math.random()*irisR*0.35;
     x.fillStyle='rgba(20,8,0,'+(0.1+Math.random()*0.2)+')';
     x.beginPath();x.arc(cx+Math.cos(da)*dr,cy+Math.sin(da)*dr,1+Math.random()*3,0,6.28);x.fill();
   }
 
-  // Pass 9: Inner fire glow around pupil
+  // Pass 9: Inner fire glow
   var hr1=x.createRadialGradient(cx,cy,pupilH*0.2,cx,cy,pupilH*1.4);
-  hr1.addColorStop(0,'rgba(255,200,80,0.5)');
-  hr1.addColorStop(0.3,'rgba(255,150,30,0.25)');
-  hr1.addColorStop(0.6,'rgba(255,100,0,0.1)');
-  hr1.addColorStop(1,'transparent');
+  hr1.addColorStop(0,'rgba(255,200,80,0.5)');hr1.addColorStop(0.3,'rgba(255,150,30,0.25)');
+  hr1.addColorStop(0.6,'rgba(255,100,0,0.1)');hr1.addColorStop(1,'transparent');
   x.fillStyle=hr1;x.beginPath();x.arc(cx,cy,pupilH*1.4,0,6.28);x.fill();
 
   x.restore(); // unclip iris
 
   // ====== VERTICAL SLIT PUPIL ======
-  // Main black slit
   x.fillStyle='#000';
   x.beginPath();
-  x.moveTo(cx, cy-pupilH);
-  x.bezierCurveTo(cx+pupilW*1.3, cy-pupilH*0.35, cx+pupilW*1.3, cy+pupilH*0.35, cx, cy+pupilH);
-  x.bezierCurveTo(cx-pupilW*1.3, cy+pupilH*0.35, cx-pupilW*1.3, cy-pupilH*0.35, cx, cy-pupilH);
+  x.moveTo(cx,cy-pupilH);
+  x.bezierCurveTo(cx+pupilW*1.3,cy-pupilH*0.35,cx+pupilW*1.3,cy+pupilH*0.35,cx,cy+pupilH);
+  x.bezierCurveTo(cx-pupilW*1.3,cy+pupilH*0.35,cx-pupilW*1.3,cy-pupilH*0.35,cx,cy-pupilH);
   x.fill();
 
-  // Pupil depth gradient (slightly lighter in center for depth)
-  var pg = x.createRadialGradient(cx,cy,0,cx,cy,pupilW*2);
-  pg.addColorStop(0,'rgba(10,5,0,0.3)');
-  pg.addColorStop(1,'rgba(0,0,0,0.8)');
+  // Pupil depth
+  var pg=x.createRadialGradient(cx,cy,0,cx,cy,pupilW*2);
+  pg.addColorStop(0,'rgba(10,5,0,0.3)');pg.addColorStop(1,'rgba(0,0,0,0.8)');
   x.fillStyle=pg;
-  x.beginPath();
-  x.moveTo(cx, cy-pupilH);
-  x.bezierCurveTo(cx+pupilW*1.3, cy-pupilH*0.35, cx+pupilW*1.3, cy+pupilH*0.35, cx, cy+pupilH);
-  x.bezierCurveTo(cx-pupilW*1.3, cy+pupilH*0.35, cx-pupilW*1.3, cy-pupilH*0.35, cx, cy-pupilH);
+  x.beginPath();x.moveTo(cx,cy-pupilH);
+  x.bezierCurveTo(cx+pupilW*1.3,cy-pupilH*0.35,cx+pupilW*1.3,cy+pupilH*0.35,cx,cy+pupilH);
+  x.bezierCurveTo(cx-pupilW*1.3,cy+pupilH*0.35,cx-pupilW*1.3,cy-pupilH*0.35,cx,cy-pupilH);
   x.fill();
 
-  // Inner glow along slit edges
+  // Slit edge glow
   x.strokeStyle='rgba(255,140,20,0.35)';x.lineWidth=2;
-  x.beginPath();
-  x.moveTo(cx, cy-pupilH);
-  x.bezierCurveTo(cx+pupilW*1.3, cy-pupilH*0.35, cx+pupilW*1.3, cy+pupilH*0.35, cx, cy+pupilH);
-  x.stroke();
-  x.beginPath();
-  x.moveTo(cx, cy-pupilH);
-  x.bezierCurveTo(cx-pupilW*1.3, cy-pupilH*0.35, cx-pupilW*1.3, cy+pupilH*0.35, cx, cy+pupilH);
-  x.stroke();
-
-  // Softer outer glow on slit
+  x.beginPath();x.moveTo(cx,cy-pupilH);x.bezierCurveTo(cx+pupilW*1.3,cy-pupilH*0.35,cx+pupilW*1.3,cy+pupilH*0.35,cx,cy+pupilH);x.stroke();
+  x.beginPath();x.moveTo(cx,cy-pupilH);x.bezierCurveTo(cx-pupilW*1.3,cy-pupilH*0.35,cx-pupilW*1.3,cy+pupilH*0.35,cx,cy+pupilH);x.stroke();
+  // Softer outer glow
   x.strokeStyle='rgba(255,100,0,0.15)';x.lineWidth=5;
-  x.beginPath();
-  x.moveTo(cx, cy-pupilH*0.95);
-  x.bezierCurveTo(cx+pupilW*1.8, cy-pupilH*0.3, cx+pupilW*1.8, cy+pupilH*0.3, cx, cy+pupilH*0.95);
-  x.stroke();
-  x.beginPath();
-  x.moveTo(cx, cy-pupilH*0.95);
-  x.bezierCurveTo(cx-pupilW*1.8, cy-pupilH*0.3, cx-pupilW*1.8, cy+pupilH*0.3, cx, cy+pupilH*0.95);
-  x.stroke();
+  x.beginPath();x.moveTo(cx,cy-pupilH*0.95);x.bezierCurveTo(cx+pupilW*1.8,cy-pupilH*0.3,cx+pupilW*1.8,cy+pupilH*0.3,cx,cy+pupilH*0.95);x.stroke();
+  x.beginPath();x.moveTo(cx,cy-pupilH*0.95);x.bezierCurveTo(cx-pupilW*1.8,cy-pupilH*0.3,cx-pupilW*1.8,cy+pupilH*0.3,cx,cy+pupilH*0.95);x.stroke();
 
   // ====== CATCHLIGHTS ======
-  // Primary (top-left, large, bright)
   var clx=cx-irisR*0.22,cly=cy-irisR*0.28;
   var clg=x.createRadialGradient(clx,cly,0,clx,cly,irisR*0.16);
-  clg.addColorStop(0,'rgba(255,255,255,0.9)');
-  clg.addColorStop(0.2,'rgba(255,255,255,0.6)');
-  clg.addColorStop(0.5,'rgba(255,220,180,0.2)');
-  clg.addColorStop(1,'transparent');
+  clg.addColorStop(0,'rgba(255,255,255,0.9)');clg.addColorStop(0.2,'rgba(255,255,255,0.6)');
+  clg.addColorStop(0.5,'rgba(255,220,180,0.2)');clg.addColorStop(1,'transparent');
   x.fillStyle=clg;x.beginPath();x.arc(clx,cly,irisR*0.16,0,6.28);x.fill();
-  
-  // Secondary (bottom-right, subtle)
   var cl2x=cx+irisR*0.18,cl2y=cy+irisR*0.22;
   var cl2g=x.createRadialGradient(cl2x,cl2y,0,cl2x,cl2y,irisR*0.08);
-  cl2g.addColorStop(0,'rgba(255,255,255,0.5)');
-  cl2g.addColorStop(1,'transparent');
+  cl2g.addColorStop(0,'rgba(255,255,255,0.5)');cl2g.addColorStop(1,'transparent');
   x.fillStyle=cl2g;x.beginPath();x.arc(cl2x,cl2y,irisR*0.08,0,6.28);x.fill();
-
-  // Tiny sparkle catchlights
   for(var sp=0;sp<5;sp++){
-    var spx=cx+(Math.random()-0.5)*irisR*0.8;
-    var spy=cy+(Math.random()-0.5)*irisR*0.6;
+    var spx=cx+(Math.random()-0.5)*irisR*0.8,spy=cy+(Math.random()-0.5)*irisR*0.6;
     x.fillStyle='rgba(255,255,255,'+(0.15+Math.random()*0.2)+')';
     x.beginPath();x.arc(spx,spy,0.5+Math.random()*1,0,6.28);x.fill();
   }
 
-  // ====== EYELID SHADOWS (create the almond shape) ======
-  // Heavy top shadow (upper eyelid)
-  var tsG = x.createLinearGradient(0, 0, 0, cy*0.7);
-  tsG.addColorStop(0,'rgba(0,0,0,0.98)');
-  tsG.addColorStop(0.6,'rgba(5,2,0,0.85)');
-  tsG.addColorStop(1,'transparent');
-  x.fillStyle=tsG;x.fillRect(0,0,S,cy*0.7);
+  // ====== EYELID SHADOWS — fade to TRANSPARENT not black ======
+  // Top eyelid
+  var tsG=x.createLinearGradient(0,0,0,cy*0.75);
+  tsG.addColorStop(0,'rgba(2,1,0,0.85)');tsG.addColorStop(0.5,'rgba(3,1,0,0.4)');tsG.addColorStop(1,'transparent');
+  x.fillStyle=tsG;x.fillRect(0,0,S,cy*0.75);
+  // Bottom eyelid
+  var bsG=x.createLinearGradient(0,cy+cy*0.3,0,S);
+  bsG.addColorStop(0,'transparent');bsG.addColorStop(0.5,'rgba(3,1,0,0.35)');bsG.addColorStop(1,'rgba(2,1,0,0.8)');
+  x.fillStyle=bsG;x.fillRect(0,cy+cy*0.25,S,S);
+  // Side fades — transparent at edge
+  var lsG=x.createLinearGradient(0,0,S*0.25,0);
+  lsG.addColorStop(0,'rgba(1,0,0,0.6)');lsG.addColorStop(1,'transparent');
+  x.fillStyle=lsG;x.fillRect(0,0,S*0.3,S);
+  var rsG=x.createLinearGradient(S,0,S*0.75,0);
+  rsG.addColorStop(0,'rgba(1,0,0,0.6)');rsG.addColorStop(1,'transparent');
+  x.fillStyle=rsG;x.fillRect(S*0.7,0,S*0.3,S);
 
-  // Bottom shadow (lower eyelid)
-  var bsG = x.createLinearGradient(0, cy+cy*0.35, 0, S);
-  bsG.addColorStop(0,'transparent');
-  bsG.addColorStop(0.4,'rgba(5,2,0,0.8)');
-  bsG.addColorStop(1,'rgba(0,0,0,0.95)');
-  x.fillStyle=bsG;x.fillRect(0,cy+cy*0.3,S,S);
-
-  // Side shadows (narrow the eye into almond)
-  var lsG = x.createLinearGradient(0,0,S*0.2,0);
-  lsG.addColorStop(0,'rgba(0,0,0,0.9)');lsG.addColorStop(1,'transparent');
-  x.fillStyle=lsG;x.fillRect(0,0,S*0.25,S);
-  
-  var rsG = x.createLinearGradient(S,0,S*0.8,0);
-  rsG.addColorStop(0,'rgba(0,0,0,0.9)');rsG.addColorStop(1,'transparent');
-  x.fillStyle=rsG;x.fillRect(S*0.75,0,S*0.25,S);
-
-  // Overall vignette
-  var vg=x.createRadialGradient(cx,cy,irisR*0.6,cx,cy,S*0.52);
-  vg.addColorStop(0,'transparent');
-  vg.addColorStop(0.55,'transparent');
-  vg.addColorStop(0.8,'rgba(0,0,0,0.5)');
-  vg.addColorStop(1,'rgba(0,0,0,0.95)');
+  // Soft circular vignette — TRANSPARENT at edges
+  var vg=x.createRadialGradient(cx,cy,irisR*0.7,cx,cy,S*0.48);
+  vg.addColorStop(0,'transparent');vg.addColorStop(0.6,'transparent');
+  vg.addColorStop(0.85,'rgba(2,1,0,0.3)');vg.addColorStop(1,'rgba(1,0,0,0.5)');
   x.fillStyle=vg;x.fillRect(0,0,S,S);
 
   return new THREE.CanvasTexture(c);
@@ -551,8 +495,18 @@ for(var i=0;i<60;i++){
   scene.add(d);dustParticles.push(d);
 }
 
+// --- Star glow texture (shared) ---
+var starTexCanvas = document.createElement('canvas');
+starTexCanvas.width=32;starTexCanvas.height=32;
+var stCtx=starTexCanvas.getContext('2d');
+var stg=stCtx.createRadialGradient(16,16,0,16,16,16);
+stg.addColorStop(0,'rgba(255,255,255,1)');stg.addColorStop(0.2,'rgba(200,220,255,0.6)');
+stg.addColorStop(0.5,'rgba(120,160,255,0.15)');stg.addColorStop(1,'transparent');
+stCtx.fillStyle=stg;stCtx.fillRect(0,0,32,32);
+var starTex=new THREE.CanvasTexture(starTexCanvas);
+
 // --- Stars - TWO LAYERS ---
-// Layer 1: Deep field (background)
+// Layer 1: Deep field
 var starCount = 2500;
 var starGeo = new THREE.BufferGeometry();
 var starPos = new Float32Array(starCount * 3);
@@ -563,25 +517,25 @@ for (var i = 0; i < starCount; i++) {
 }
 starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
 var starMat = new THREE.PointsMaterial({
-  color: 0xbbddff, size: 0.25, transparent: true, opacity: 0.9,
-  blending: THREE.AdditiveBlending, sizeAttenuation: true
+  map: starTex, color: 0xbbddff, size: 0.35, transparent: true, opacity: 0.9,
+  blending: THREE.AdditiveBlending, sizeAttenuation: true, depthWrite: false
 });
 var starField = new THREE.Points(starGeo, starMat);
 scene.add(starField);
 
-// Layer 2: Near bright stars (visible through content while scrolling)
-var nearCount = 400;
+// Layer 2: Near bright stars (round, not cubes)
+var nearCount = 150;
 var nearGeo = new THREE.BufferGeometry();
 var nearPos = new Float32Array(nearCount * 3);
 for (var i = 0; i < nearCount; i++) {
-  nearPos[i*3] = (Math.random()-0.5)*80;
-  nearPos[i*3+1] = (Math.random()-0.5)*80;
-  nearPos[i*3+2] = -Math.random()*40-2;
+  nearPos[i*3] = (Math.random()-0.5)*60;
+  nearPos[i*3+1] = (Math.random()-0.5)*60;
+  nearPos[i*3+2] = -Math.random()*30-3;
 }
 nearGeo.setAttribute('position', new THREE.BufferAttribute(nearPos, 3));
 var nearMat = new THREE.PointsMaterial({
-  color: 0xddeeff, size: 0.4, transparent: true, opacity: 0.7,
-  blending: THREE.AdditiveBlending, sizeAttenuation: true
+  map: starTex, color: 0xddeeff, size: 0.5, transparent: true, opacity: 0.6,
+  blending: THREE.AdditiveBlending, sizeAttenuation: true, depthWrite: false
 });
 var nearField = new THREE.Points(nearGeo, nearMat);
 scene.add(nearField);
@@ -711,8 +665,8 @@ document.getElementById('descendBtn').addEventListener('click', function(){
   this.style.opacity='0';
   setTimeout(function(){document.getElementById('descendBtn').style.display='none';},800);
 
-  // Play music - iframe created here inside click = user gesture = browser allows autoplay
-  playMusic();
+  // Start music on descend if not already playing
+  if(!musicPlaying) toggleMusic();
 
   // Smooth scroll to conversation
   setTimeout(function(){
